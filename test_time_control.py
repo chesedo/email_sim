@@ -26,7 +26,7 @@ class DockerTimeController:
 
         # Start the service using compose
         self.docker.compose.up(
-            detach=True,
+            wait=True
         )
 
         # Get container instance
@@ -34,9 +34,6 @@ class DockerTimeController:
         if not containers:
             raise RuntimeError("No containers started")
         self.container = containers[0]
-
-        # Wait for container to be ready
-        time.sleep(2)
 
         # Get the mapped port
         port_mappings = self.container.network_settings.ports["8080/tcp"]
