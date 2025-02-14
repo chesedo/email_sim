@@ -1,0 +1,11 @@
+services:
+  timeserver:
+    build:
+      context: ./timeserver
+      dockerfile: Containerfile
+    ports:
+      - "8080"
+    environment:
+      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
+      - TZ=UTC
+    env_file: "tmp.env"

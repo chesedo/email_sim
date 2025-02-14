@@ -1,52 +1,59 @@
 #!/usr/bin/env python3
 
-# test_time_control.py
 import pytest
-import docker
-import io
-from datetime import datetime, timedelta
+from datetime import datetime
 import requests
 import time
+from python_on_whales import DockerClient
+import tempfile
+from pathlib import Path
 
 class DockerTimeController:
     def __init__(self):
-        self.client = docker.from_env()
-        self.container = None
-        self.static_time = datetime(2024, 8, 1, 12, 0, 0)
+        static_time = datetime(2024, 8, 1, 12, 0, 0)
+        # Set up environment with our static time
+        faketime_timestamp = static_time.strftime("@%Y-%m-%d %H:%M:%S")
 
+        # Create env file next to compose.yaml
+        project_dir = Path.cwd()
+        self.env_path = project_dir / "tmp.env"
+        self.env_path.write_text(f"FAKETIME={faketime_timestamp}\n")
+
+        self.docker = DockerClient()
+        self.container = None
 
     def start_container(self):
-        # Set initial timestamp for libfaketime
-        faketime_timestamp = self.static_time.strftime("@%Y-%m-%d %H:%M:%S")
 
-        # Run the container with libfaketime configured
-        self.container = self.client.containers.run(
-            "timeserver:latest",
+        # Start the service using compose
+        self.docker.compose.up(
             detach=True,
-            ports={'8080/tcp': None},
-            environment={
-                "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1",
-                "FAKETIME": faketime_timestamp,
-                "FAKETIME_NO_CACHE": "1",
-                "TZ": "UTC"
-            }
         )
+
+        # Get container instance
+        containers = self.docker.compose.ps()
+        if not containers:
+            raise RuntimeError("No containers started")
+        self.container = containers[0]
 
         # Wait for container to be ready
         time.sleep(2)
 
         # Get the mapped port
-        container_info = self.client.api.inspect_container(self.container.id)
-        self.host_port = container_info['NetworkSettings']['Ports']['8080/tcp'][0]['HostPort']
+        port_mappings = self.container.network_settings.ports["8080/tcp"]
+        if not port_mappings:
+            raise RuntimeError("Could not find mapped port")
+
+        self.host_port = port_mappings[0]["HostPort"]
 
     def get_container_time(self):
         response = requests.get(f"http://localhost:{self.host_port}/time")
         return datetime.strptime(response.json()['current_time'], '%Y-%m-%d %H:%M:%S')
 
     def cleanup(self):
-        if self.container:
-            self.container.stop()
-            self.container.remove()
+        if self.docker:
+            self.docker.compose.down(volumes=True)
+
+        self.env_path.unlink(missing_ok=True)
 
 @pytest.fixture
 def time_controlled_container():
