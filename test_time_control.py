@@ -1,15 +1,30 @@
 #!/usr/bin/env python3
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 import time
 from python_on_whales import DockerClient
 from pathlib import Path
+import random
 
 class DockerTimeController:
-    def __init__(self):
-        static_time = datetime(2024, 8, 1, 12, 0, 0)
+    def __init__(self, seed):
+        # Initialize random with seed
+        random.seed(seed)
+
+        # Generate a random time between 2020 and 2030
+        start = datetime(2020, 1, 1)
+        end = datetime(2030, 12, 31)
+        days_between = (end - start).days
+        random_days = random.randint(0, days_between)
+        random_seconds = random.randint(0, 24*60*60 - 1)  # Random time within the day
+
+        static_time = start + timedelta(days=random_days, seconds=random_seconds)
+        print(f"Using seed {seed}, generated time: {static_time}")
+
+        self.initial_time = static_time
+
         # Set up environment with our static time
         faketime_timestamp = static_time.strftime("@%Y-%m-%d %H:%M:%S")
 
@@ -60,7 +75,9 @@ class DockerTimeController:
 
 @pytest.fixture
 def time_controlled_container():
-    controller = DockerTimeController()
+    # Generate a random seed for this test run
+    seed = random.randint(1, 1_000_000)
+    controller = DockerTimeController(seed)
     try:
         yield controller
     finally:
@@ -69,7 +86,7 @@ def time_controlled_container():
 def test_time_control(time_controlled_container):
     # Get the container's current time
     container_time = time_controlled_container.get_time()
-    expected_time = datetime(2024, 8, 1, 12, 0, 0)
+    expected_time = time_controlled_container.initial_time
 
     # Assert that the time was set correctly (allowing for a small difference due to execution time)
     time_difference = abs((container_time - expected_time).total_seconds())
