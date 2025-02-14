@@ -3,6 +3,12 @@ import requests
 from python_on_whales import DockerClient
 from pathlib import Path
 import random
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn
+
+console = Console()
 
 class DockerTimeController:
     def __init__(self):
@@ -14,7 +20,10 @@ class DockerTimeController:
         random_seconds = random.randint(0, 24*60*60 - 1)
 
         self.initial_time = start + timedelta(days=random_days, seconds=random_seconds)
-        print(f"Simulation starting with time: {self.initial_time}")
+        console.print(Panel.fit(
+            f"[cyan]Initial simulation time:[/] [yellow]{self.initial_time}[/]",
+            title="DST Environment Setup"
+        ))
 
         # Set up environment with our static time
         faketime_timestamp = self.initial_time.strftime("@%Y-%m-%d %H:%M:%S")
@@ -27,11 +36,17 @@ class DockerTimeController:
         self.docker = DockerClient()
 
         # Start the services using compose
-        self.docker.compose.up(
-            wait=True,
-            build=True,
-            recreate=True,
-        )
+        with Progress(
+            SpinnerColumn(),
+            "[progress.description]{task.description}",
+            console=console
+        ) as progress:
+            progress.add_task("[cyan]Starting Docker services...", total=None)
+            self.docker.compose.up(
+                wait=True,
+                build=True,
+                recreate=True,
+            )
 
         # Convert list of containers to a map by service name
         containers = self.docker.compose.ps()
@@ -43,7 +58,12 @@ class DockerTimeController:
             for container in containers
         }
 
-        print("Available services:", list(self.containers.keys()))
+        # Display available services in a table
+        table = Table(show_header=False, title="Available Services", border_style="cyan")
+        for service in self.containers.keys():
+            table.add_row(f"[green]•[/] {service}")
+        console.print(table)
+        console.print()
 
     def get_time(self):
         timeserver = self.containers['timeserver']
@@ -57,5 +77,19 @@ class DockerTimeController:
 
     def cleanup(self):
         if self.docker:
-            self.docker.compose.down(volumes=True)
-        self.env_path.unlink(missing_ok=True)
+            with Progress(
+                SpinnerColumn(),
+                "[progress.description]{task.description}",
+                console=console
+            ) as progress:
+                progress.add_task("[yellow]Stopping Docker services...", total=None)
+                self.docker.compose.down(volumes=True)
+
+        if self.env_path.exists():
+            self.env_path.unlink()
+
+        console.print(Panel.fit(
+            "[green]Environment cleanup completed[/]",
+            title="DST Cleanup",
+            border_style="yellow"
+        ))

@@ -3,8 +3,13 @@
 import sys
 import argparse
 import random
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
 from dst.simulation import run_simulation
 from dst.actions import get_available_actions
+
+console = Console()
 
 def main():
     parser = argparse.ArgumentParser(description='Run time simulation')
@@ -15,13 +20,25 @@ def main():
     if args.seed is None:
         args.seed = random.randint(1, 1_000_000)
 
-    print(f"Using seed {args.seed}")
+    # Display initial configuration
+    console.print(Panel.fit(
+        f"[cyan]Random Seed:[/] [yellow]{args.seed}[/]\n"
+        f"[cyan]Simulation Steps:[/] [yellow]{args.steps}[/]",
+        title="DST Configuration",
+        border_style="blue"
+    ))
+
     random.seed(args.seed)
 
     # Get all registered actions and instantiate them
     action_classes = get_available_actions()
 
-    print(f"Available actions: {', '.join(action_classes.keys())}")
+    # Display available actions in a table
+    table = Table(show_header=False, title="Available Actions", border_style="blue")
+    for action_name in action_classes.keys():
+        table.add_row(f"[green]•[/] {action_name}")
+    console.print(table)
+    console.print()
 
     actions = [cls() for cls in action_classes.values()]
 

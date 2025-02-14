@@ -7,6 +7,7 @@ pkgs.mkShell {
     python3Packages.docker
     python3Packages.python-on-whales
     python3Packages.requests
+    python3Packages.rich
     python3Packages.pip
     pyright
     docker
