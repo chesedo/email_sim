@@ -25,7 +25,9 @@ class DockerTimeController:
 
         # Start the service using compose
         self.docker.compose.up(
-            wait=True
+            wait=True, # Wait for the service to be healthy
+            build=True, # Always rebuild the images
+            recreate=True, # Recreate the containers
         )
 
         # Convert list of containers to a map by service name
