@@ -19,11 +19,8 @@ class DockerTimeController:
         self.env_path.write_text(f"FAKETIME={faketime_timestamp}\n")
 
         self.docker = DockerClient()
-        self.containers = {}
 
-    def start_container(self):
-
-        # Start the service using compose
+        # Start the services using compose
         self.docker.compose.up(
             wait=True, # Wait for the service to be healthy
             build=True, # Always rebuild the images
@@ -65,7 +62,6 @@ class DockerTimeController:
 def time_controlled_container():
     controller = DockerTimeController()
     try:
-        controller.start_container()
         yield controller
     finally:
         controller.cleanup()
