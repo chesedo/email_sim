@@ -1,45 +1,47 @@
 #!/usr/bin/env python3
 
+# test_time_control.py
 import pytest
 import docker
+import io
 from datetime import datetime, timedelta
 import requests
 import time
 
 class DockerTimeController:
     def __init__(self):
-        self.client = docker.from_client()
+        self.client = docker.from_env()
         self.container = None
+        self.static_time = datetime(2024, 8, 1, 12, 0, 0)
+
 
     def start_container(self):
-        # Using a simple Python HTTP server as our test service
+        # Set initial timestamp for libfaketime
+        faketime_timestamp = self.static_time.strftime("@%Y-%m-%d %H:%M:%S")
+
+        # Run the container with libfaketime configured
         self.container = self.client.containers.run(
-            "python:3.9-slim",
-            command="python -m http.server 8080",
+            "timeserver:latest",
             detach=True,
-            ports={'8080/tcp': None},  # Random host port
-            environment={"TZ": "UTC"},  # Ensure UTC timezone
-            cap_add=["SYS_TIME"]  # Required for time manipulation
+            ports={'8080/tcp': None},
+            environment={
+                "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1",
+                "FAKETIME": faketime_timestamp,
+                "FAKETIME_NO_CACHE": "1",
+                "TZ": "UTC"
+            }
         )
 
         # Wait for container to be ready
-        time.sleep(2)  # Simple wait, could be replaced with proper health check
+        time.sleep(2)
 
         # Get the mapped port
         container_info = self.client.api.inspect_container(self.container.id)
         self.host_port = container_info['NetworkSettings']['Ports']['8080/tcp'][0]['HostPort']
 
-    def set_container_time(self, target_time: datetime):
-        # Format time for date command
-        time_str = target_time.strftime("%Y-%m-%d %H:%M:%S")
-
-        # Use date command to set time in container
-        exec_result = self.container.exec_run(
-            f"date -s '{time_str}'",
-            privileged=True
-        )
-        if exec_result.exit_code != 0:
-            raise Exception(f"Failed to set time: {exec_result.output}")
+    def get_container_time(self):
+        response = requests.get(f"http://localhost:{self.host_port}/time")
+        return datetime.strptime(response.json()['current_time'], '%Y-%m-%d %H:%M:%S')
 
     def cleanup(self):
         if self.container:
@@ -56,10 +58,16 @@ def time_controlled_container():
         controller.cleanup()
 
 def test_time_control(time_controlled_container):
-    # Set container time to a specific datetime
-    target_time = datetime(2024, 1, 1, 12, 0, 0)
-    time_controlled_container.set_container_time(target_time)
+    # Get the container's current time
+    container_time = time_controlled_container.get_container_time()
+    expected_time = datetime(2024, 8, 1, 12, 0, 0)
 
-    # You can now make requests to your service and verify time-dependent behavior
-    response = requests.get(f"http://localhost:{time_controlled_container.host_port}")
-    assert response.status_code == 200
+    # Assert that the time was set correctly (allowing for a small difference due to execution time)
+    time_difference = abs((container_time - expected_time).total_seconds())
+    assert time_difference < 5, f"Time difference too large: {time_difference} seconds"
+
+    # Wait for 5 seconds
+    time.sleep(5)
+    new_time = time_controlled_container.get_container_time()
+    time_difference = abs((new_time - container_time).total_seconds())
+    assert time_difference == 5, f"Time difference should be 5 seconds, but was {time_difference}"

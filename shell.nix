@@ -9,6 +9,7 @@ pkgs.mkShell {
     python3Packages.requests
     python3Packages.pip
     pyright
+    docker
   ];
 
   shellHook = ''
