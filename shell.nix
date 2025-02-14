@@ -4,7 +4,6 @@
 pkgs.mkShell {
   buildInputs = with pkgs; [
     python3
-    python3Packages.pytest
     python3Packages.docker
     python3Packages.python-on-whales
     python3Packages.requests
