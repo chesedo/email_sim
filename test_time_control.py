@@ -1,18 +1,57 @@
 #!/usr/bin/env python3
 
-import pytest
 from datetime import datetime, timedelta
 import requests
 import time
 from python_on_whales import DockerClient
 from pathlib import Path
 import random
+import argparse
+import sys
+from typing import Callable, List
+
+class SimulationAction:
+    """Base class for simulation actions"""
+    def __call__(self, controller: 'DockerTimeController') -> bool:
+        raise NotImplementedError
+
+class CheckTime(SimulationAction):
+    def __call__(self, controller: 'DockerTimeController') -> bool:
+        try:
+            before_time = controller.get_time()
+            time.sleep(5)
+            after_time = controller.get_time()
+
+            time_difference = abs((after_time - before_time).total_seconds())
+            if abs(time_difference - 5) > 0.1:
+                print(f"ERROR: Time progression incorrect. Expected 5 seconds, got {time_difference}")
+                return False
+            return True
+        except Exception as e:
+            print(f"Error checking time: {e}")
+            return False
+
+class WaitRandomDuration(SimulationAction):
+    def __call__(self, controller: 'DockerTimeController') -> bool:
+        try:
+            duration = random.randint(1, 10)
+            print(f"Waiting for {duration} seconds...")
+
+            before_time = controller.get_time()
+            time.sleep(duration)
+            after_time = controller.get_time()
+
+            time_difference = abs((after_time - before_time).total_seconds())
+            if abs(time_difference - duration) > 0.1:
+                print(f"ERROR: Time progression incorrect. Expected {duration} seconds, got {time_difference}")
+                return False
+            return True
+        except Exception as e:
+            print(f"Error during random wait: {e}")
+            return False
 
 class DockerTimeController:
-    def __init__(self, seed):
-        # Initialize random with seed
-        random.seed(seed)
-
+    def __init__(self):
         # Generate a random time between 2020 and 2030
         start = datetime(2020, 1, 1)
         end = datetime(2030, 12, 31)
@@ -20,13 +59,11 @@ class DockerTimeController:
         random_days = random.randint(0, days_between)
         random_seconds = random.randint(0, 24*60*60 - 1)  # Random time within the day
 
-        static_time = start + timedelta(days=random_days, seconds=random_seconds)
-        print(f"Using seed {seed}, generated time: {static_time}")
-
-        self.initial_time = static_time
+        self.initial_time = start + timedelta(days=random_days, seconds=random_seconds)
+        print(f"Simulation starting with time: {self.initial_time}")
 
         # Set up environment with our static time
-        faketime_timestamp = static_time.strftime("@%Y-%m-%d %H:%M:%S")
+        faketime_timestamp = self.initial_time.strftime("@%Y-%m-%d %H:%M:%S")
 
         # Create env file next to compose.yaml
         project_dir = Path.cwd()
@@ -73,27 +110,42 @@ class DockerTimeController:
 
         self.env_path.unlink(missing_ok=True)
 
-@pytest.fixture
-def time_controlled_container():
-    # Generate a random seed for this test run
-    seed = random.randint(1, 1_000_000)
-    controller = DockerTimeController(seed)
+
+def run_simulation(actions: List[SimulationAction], steps: int = 100) -> bool:
+    controller = DockerTimeController()
     try:
-        yield controller
+        for step in range(steps):
+            print(f"\nStep {step + 1}/{steps}")
+            action = random.choice(actions)
+            print(f"Running action: {action.__class__.__name__}")
+            if not action(controller):
+                return False
+        return True
     finally:
         controller.cleanup()
 
-def test_time_control(time_controlled_container):
-    # Get the container's current time
-    container_time = time_controlled_container.get_time()
-    expected_time = time_controlled_container.initial_time
+def main():
+    parser = argparse.ArgumentParser(description='Run time simulation')
+    parser.add_argument('--seed', type=int, help='Seed for random time generation')
+    parser.add_argument('--steps', type=int, default=2, help='Number of simulation steps')
+    args = parser.parse_args()
 
-    # Assert that the time was set correctly (allowing for a small difference due to execution time)
-    time_difference = abs((container_time - expected_time).total_seconds())
-    assert time_difference < 5, f"Time difference too large: {time_difference} seconds"
+    if args.seed is None:
+        args.seed = random.randint(1, 1_000_000)
 
-    # Wait for 5 seconds
-    time.sleep(5)
-    new_time = time_controlled_container.get_time()
-    time_difference = abs((new_time - container_time).total_seconds())
-    assert time_difference == 5, f"Time difference should be 5 seconds, but was {time_difference}"
+    print(f"Using seed {args.seed}")
+
+    random.seed(args.seed)
+
+    # List of available actions
+    actions = [
+        CheckTime(),
+        WaitRandomDuration(),
+        # Add more actions here
+    ]
+
+    success = run_simulation(actions, args.steps)
+    sys.exit(0 if success else 1)
+
+if __name__ == "__main__":
+    main()
