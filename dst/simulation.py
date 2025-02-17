@@ -10,14 +10,16 @@ from rich.panel import Panel
 from rich.table import Table
 from dst.controller import DockerTimeController
 from dst.actions import SimulationAction, ValidationAction
+from dst.generator import DataGenerator
 
 console = Console()
 
 class SimulationRunner:
-    def __init__(self, actions: List[SimulationAction], steps: int = 100):
+    def __init__(self, actions: List[SimulationAction], data_generator: DataGenerator, steps: int = 100):
         self.actions = actions
         self.steps = steps
         self.controller = DockerTimeController()
+        self.data_generator = data_generator
         self.pending_validations: Queue[ValidationAction] = Queue()
         self.stop_event = threading.Event()
         self.validation_error = None
@@ -47,7 +49,7 @@ class SimulationRunner:
             console.print(table)
 
             # Execute the action
-            execution_success, validator = action(self.controller)
+            execution_success, validator = action(self.controller, self.data_generator)
             if not execution_success:
                 console.print("[bold red]Action execution failed! ❌")
                 self.action_error = f"Action {action_name} failed to execute"
@@ -166,7 +168,7 @@ class SimulationRunner:
         finally:
             self.controller.cleanup()
 
-def run_simulation(actions: List[SimulationAction], steps: int = 100) -> bool:
+def run_simulation(actions: List[SimulationAction], data_generator: DataGenerator, steps: int = 100) -> bool:
     """Main entry point for running a simulation"""
-    runner = SimulationRunner(actions, steps)
+    runner = SimulationRunner(actions, data_generator, steps)
     return runner.run()

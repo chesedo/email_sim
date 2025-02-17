@@ -4,9 +4,11 @@ from dst.actions import SimulationAction, ValidationAction, register_action
 from dst.controller import DockerTimeController
 from typing import Optional
 
+from dst.generator import DataGenerator
+
 @register_action
 class WaitRandomDuration(SimulationAction):
-    def __call__(self, controller: DockerTimeController) -> tuple[bool, Optional[ValidationAction]]:
+    def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> tuple[bool, Optional[ValidationAction]]:
         try:
             duration = random.randint(1, 2)
             print(f"Waiting for {duration} seconds...")

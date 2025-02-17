@@ -1,6 +1,7 @@
 from typing import Dict, Type, Optional
 from datetime import datetime
 from dst.controller import DockerTimeController
+from dst.generator import DataGenerator
 
 class ValidationAction:
     """Base class for validation actions"""
@@ -25,7 +26,7 @@ class ValidationAction:
 class SimulationAction:
     """Base class for simulation actions"""
 
-    def __call__(self, controller: DockerTimeController) -> tuple[bool, Optional[ValidationAction]]:
+    def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> tuple[bool, Optional[ValidationAction]]:
         """
         Execute the action and optionally return a validator
 

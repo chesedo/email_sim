@@ -8,6 +8,7 @@ from rich.panel import Panel
 from rich.table import Table
 from dst.simulation import run_simulation
 from dst.actions import get_available_actions
+from dst.generator import DataGenerator
 
 console = Console()
 
@@ -42,7 +43,9 @@ def main():
 
     actions = [cls() for cls in action_classes.values()]
 
-    success = run_simulation(actions, args.steps)
+    data_generator = DataGenerator(args.seed)
+
+    success = run_simulation(actions, data_generator, args.steps)
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":

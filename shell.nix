@@ -9,6 +9,8 @@ pkgs.mkShell {
     python3Packages.requests
     python3Packages.rich
     python3Packages.aiosmtplib
+    python3Packages.faker
+    python3Packages.jinja2
     python3Packages.pip
     pyright
     docker
