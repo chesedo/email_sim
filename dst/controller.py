@@ -35,6 +35,7 @@ class DockerTimeController:
 
         self.docker = DockerClient()
 
+        # TODO change the ownership of the exim config files to `root`
         # Start the services using compose
         with Progress(
             SpinnerColumn(),

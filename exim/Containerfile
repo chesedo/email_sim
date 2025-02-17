@@ -1,0 +1,26 @@
+FROM debian:bullseye-slim
+
+# Install Exim4 and required utilities
+RUN apt-get update && apt-get install -y \
+    exim4 \
+    libfaketime \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create mail directory with correct permissions
+RUN mkdir -p /var/mail && \
+    chown Debian-exim:mail /var/mail && \
+    chmod 2775 /var/mail
+
+# Expose SMTP port
+EXPOSE 25
+
+# Create file to get around tainted values
+# https://jimbobmcgee.wordpress.com/2020/07/29/de-tainting-exim-configuration-variables/
+RUN echo '*' > /etc/exim4/detaint && \
+    chmod 400 /etc/exim4/detaint && \
+    chown Debian-exim /etc/exim4/detaint
+
+USER Debian-exim
+
+# Start Exim in foreground mode
+CMD ["exim4", "-bd", "-q1m", "-v"]

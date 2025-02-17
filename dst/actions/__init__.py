@@ -17,4 +17,5 @@ def register_action(cls: Type[SimulationAction]):
 def get_available_actions() -> Dict[str, Type[SimulationAction]]:
     """Get all registered actions"""
     from . import time  # Import modules containing actions to register them
+    from . import email  # Import modules containing actions to register them
     return dict(_action_registry)

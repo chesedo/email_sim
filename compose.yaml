@@ -9,3 +9,40 @@ services:
       - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
       - TZ=UTC
     env_file: "tmp.env"
+
+  exim_send:
+    build:
+      context: ./exim
+      dockerfile: Containerfile
+    ports:
+      - "25"
+    volumes:
+      - ./exim/send.conf:/etc/exim4/exim4.conf:ro
+    environment:
+      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
+      - TZ=UTC
+    env_file: "tmp.env"
+    healthcheck:
+      test: ["CMD", "exim4", "-bV"]
+      interval: 1s
+      timeout: 3s
+      retries: 3
+      start_period: 1s
+
+  exim_receive:
+    build:
+      context: ./exim
+      dockerfile: Containerfile
+    volumes:
+      - ./exim/receive.conf:/etc/exim4/exim4.conf:ro
+      - ./tmp/mail:/var/mail
+    environment:
+      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
+      - TZ=UTC
+    env_file: "tmp.env"
+    healthcheck:
+      test: ["CMD", "exim4", "-bV"]
+      interval: 1s
+      timeout: 3s
+      retries: 3
+      start_period: 1s

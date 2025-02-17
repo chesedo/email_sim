@@ -8,9 +8,11 @@ pkgs.mkShell {
     python3Packages.python-on-whales
     python3Packages.requests
     python3Packages.rich
+    python3Packages.aiosmtplib
     python3Packages.pip
     pyright
     docker
+    swaks
   ];
 
   shellHook = ''
