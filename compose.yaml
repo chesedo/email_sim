@@ -9,6 +9,9 @@ services:
       - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
       - TZ=UTC
     env_file: "tmp.env"
+    networks:
+      dst_net:
+        ipv4_address: 172.28.0.10
 
   exim_send:
     build:
@@ -22,6 +25,9 @@ services:
       - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
       - TZ=UTC
     env_file: "tmp.env"
+    networks:
+      dst_net:
+        ipv4_address: 172.28.0.20
     healthcheck:
       test: ["CMD", "exim4", "-bV"]
       interval: 1s
@@ -40,9 +46,20 @@ services:
       - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
       - TZ=UTC
     env_file: "tmp.env"
+    networks:
+      dst_net:
+        ipv4_address: 172.28.0.30
     healthcheck:
       test: ["CMD", "exim4", "-bV"]
       interval: 1s
       timeout: 3s
       retries: 3
       start_period: 1s
+
+networks:
+  dst_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+          gateway: 172.28.0.1
