@@ -15,6 +15,7 @@ pkgs.mkShell {
     pyright
     docker
     swaks
+    libfaketime
   ];
 
   shellHook = ''

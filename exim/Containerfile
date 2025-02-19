@@ -6,11 +6,6 @@ RUN apt-get update && apt-get install -y \
     libfaketime \
     && rm -rf /var/lib/apt/lists/*
 
-# Create mail directory with correct permissions
-RUN mkdir -p /var/mail && \
-    chown Debian-exim:mail /var/mail && \
-    chmod 2775 /var/mail
-
 # Expose SMTP port
 EXPOSE 25
 
@@ -19,6 +14,10 @@ EXPOSE 25
 RUN echo '*' > /etc/exim4/detaint && \
     chmod 400 /etc/exim4/detaint && \
     chown Debian-exim /etc/exim4/detaint
+
+# Remove setuid bit from Exim
+# Else it won't load the LD_PRELOAD library since the ruid != euid
+RUN chmod u-s /usr/sbin/exim4
 
 USER Debian-exim
 
