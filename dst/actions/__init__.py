@@ -26,6 +26,14 @@ class ValidationAction:
 class SimulationAction:
     """Base class for simulation actions"""
 
+    @property
+    def weight(self) -> float:
+        """
+        Weight of this action being selected. Default is 1.0.
+        Override this property to change the likelihood of the action being selected.
+        """
+        return 1.0
+
     def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> tuple[bool, Optional[ValidationAction]]:
         """
         Execute the action and optionally return a validator

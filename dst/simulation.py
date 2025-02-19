@@ -18,7 +18,11 @@ console = Console()
 
 class SimulationRunner:
     def __init__(self, actions: List[SimulationAction], data_generator: DataGenerator, steps: int = 100):
+        weights = [action.weight for action in actions]
+        total_weight = sum(weights)
+
         self.actions = actions
+        self.normalized_weights = [w/total_weight for w in weights]
         self.steps = steps
         self.controller = DockerTimeController()
         self.data_generator = data_generator
@@ -37,16 +41,18 @@ class SimulationRunner:
             return
 
         try:
-            # Select and execute action
-            action = random.choice(self.actions)
+            # Select action based on weights
+            action = random.choices(self.actions, weights=self.normalized_weights, k=1)[0]
+
             action_name = action.__class__.__name__
             self.started_steps += 1
 
-            # Log step info
+            # Log step info with weight information
             table = Table(show_header=False, box=None)
             table.add_row(
                 f"[bold cyan]Step {self.started_steps}/{self.steps}",
-                f"[blue]Action: {action_name}"
+                f"[blue]Action: {action_name}",
+                f"[dim](weight: {action.weight})"
             )
             console.print(table)
 

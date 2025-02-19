@@ -8,6 +8,11 @@ from dst.generator import DataGenerator
 
 @register_action
 class WaitRandomDuration(SimulationAction):
+    @property
+    def weight(self) -> float:
+        """Give this action a 1/100 chance of being selected"""
+        return 0.01
+
     def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> tuple[bool, Optional[ValidationAction]]:
         try:
             duration = random.randint(1, 2)
