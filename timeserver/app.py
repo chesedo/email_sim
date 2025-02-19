@@ -2,6 +2,8 @@
 
 import http.server
 import socketserver
+import signal
+import sys
 from datetime import datetime
 import json
 
@@ -23,5 +25,20 @@ class TimeHandler(http.server.SimpleHTTPRequestHandler):
         else:
             super().do_GET()
 
-with socketserver.TCPServer(('', 8080), TimeHandler) as httpd:
-    httpd.serve_forever()
+def signal_handler(signum, frame):
+    print("Received shutdown signal, closing server...")
+    httpd.server_close()
+    sys.exit(0)
+
+if __name__ == "__main__":
+    # Set up signal handlers
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
+    # Create and start server
+    with socketserver.TCPServer(('', 8080), TimeHandler) as httpd:
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("Received keyboard interrupt, closing server...")
+            httpd.server_close()
