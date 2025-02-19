@@ -1,6 +1,8 @@
 import random
 import time
 import threading
+import hashlib
+import os
 from queue import Queue
 from concurrent.futures import ThreadPoolExecutor
 from typing import List
@@ -171,4 +173,30 @@ class SimulationRunner:
 def run_simulation(actions: List[SimulationAction], data_generator: DataGenerator, steps: int = 100) -> bool:
     """Main entry point for running a simulation"""
     runner = SimulationRunner(actions, data_generator, steps)
-    return runner.run()
+    success = runner.run()
+
+    if success:
+        dir_hash = hash_directory("./tmp")
+        console.print(f"[cyan]Directory Hash:[/] {dir_hash}")
+
+def hash_directory(path: str) -> str:
+    """Generate a deterministic hash of a directory's contents"""
+    sha256_hash = hashlib.sha256()
+
+    # Walk directory in sorted order for determinism
+    for root, dirs, files in sorted(os.walk(path)):
+        # Hash directory names
+        for dir_name in sorted(dirs):
+            sha256_hash.update(dir_name.encode())
+
+        # Hash file contents
+        for file_name in sorted(files):
+            file_path = os.path.join(root, file_name)
+            # Hash file name
+            sha256_hash.update(file_name.encode())
+            # Hash file content
+            with open(file_path, 'rb') as f:
+                for chunk in iter(lambda: f.read(4096), b''):
+                    sha256_hash.update(chunk)
+
+    return sha256_hash.hexdigest()
