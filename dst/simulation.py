@@ -119,9 +119,9 @@ class SimulationRunner:
     def action_scheduler(self):
         """Schedules actions at fixed intervals regardless of execution time"""
         while self.started_steps < self.steps and not self.stop_event.is_set():
-            next_delay = random.uniform(1.0, 3.0)
+            next_delay = random.uniform(10, 300)
             self.action_pool.submit(self.execute_action)
-            time.sleep(next_delay)
+            time.sleep(next_delay / 1000)
 
     def run(self) -> bool:
         """Run the simulation with parallel action execution and validation"""
