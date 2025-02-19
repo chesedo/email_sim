@@ -3,8 +3,6 @@ from email import message_from_bytes
 from pathlib import Path
 import asyncio
 import aiosmtplib
-import shutil
-import subprocess
 from datetime import datetime
 from rich.console import Console
 from dst.actions import SimulationAction, ValidationAction, register_action
@@ -69,54 +67,6 @@ class EmailValidator(ValidationAction):
 @register_action
 class SendBasicEmail(SimulationAction):
     """Sends a basic test email from the sending MTA to the receiving MTA"""
-
-    def ensure_mail_directory(self) -> bool:
-        """Ensures mail directory exists with correct permissions"""
-        self.mail_dir = Path("./tmp/mail")
-        if self.mail_dir.exists():
-            try:
-                shutil.rmtree(self.mail_dir)
-            except PermissionError:
-                console.print("[yellow]Need sudo permissions to delete mail directory.[/]")
-                try:
-                    subprocess.run(
-                        ["sudo", "rm", "-R", str(self.mail_dir)],
-                        capture_output=True,
-                        text=True,
-                        check=True
-                    )
-                except subprocess.CalledProcessError as e:
-                    console.print(f"[red]Failed to delete directory: {e.stderr}[/]")
-                    return False
-                except Exception as e:
-                    console.print(f"[red]Unexpected error deleting directory: {e}[/]")
-                    return False
-
-        self.mail_dir.mkdir(parents=True, exist_ok=True)
-
-        try:
-            shutil.chown(self.mail_dir, user=101)  # Only change user, keep group
-            return True
-        except PermissionError:
-            console.print("[yellow]Need sudo permissions to set mail directory ownership.[/]")
-            try:
-                subprocess.run(
-                    ["sudo", "chown", "101", str(self.mail_dir)],
-                    capture_output=True,
-                    text=True,
-                    check=True
-                )
-                return True
-            except subprocess.CalledProcessError as e:
-                console.print(f"[red]Failed to set directory permissions: {e.stderr}[/]")
-                return False
-            except Exception as e:
-                console.print(f"[red]Unexpected error setting permissions: {e}[/]")
-                return False
-
-    def __init__(self):
-        if not self.ensure_mail_directory():
-            raise RuntimeError("Could not set up mail directory with correct permissions")
 
     async def send_test_email(self, host: str, port: int, email: EmailMessage) -> bool:
         try:

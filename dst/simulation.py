@@ -1,8 +1,8 @@
 import random
 import time
 import threading
-import hashlib
-import os
+import shutil
+import subprocess
 from queue import Queue
 from concurrent.futures import ThreadPoolExecutor
 from typing import List
@@ -13,11 +13,14 @@ from rich.table import Table
 from dst.controller import DockerTimeController
 from dst.actions import SimulationAction, ValidationAction
 from dst.generator import DataGenerator
+from pathlib import Path
 
 console = Console()
 
 class SimulationRunner:
-    def __init__(self, actions: List[SimulationAction], data_generator: DataGenerator, steps: int = 100):
+    def __init__(self, actions: List[SimulationAction], seed: int, steps: int = 100):
+        random.seed(seed)
+
         weights = [action.weight for action in actions]
         total_weight = sum(weights)
 
@@ -25,7 +28,7 @@ class SimulationRunner:
         self.normalized_weights = [w/total_weight for w in weights]
         self.steps = steps
         self.controller = DockerTimeController()
-        self.data_generator = data_generator
+        self.data_generator = DataGenerator(seed)
         self.pending_validations: Queue[ValidationAction] = Queue()
         self.stop_event = threading.Event()
         self.validation_error = None
@@ -176,33 +179,62 @@ class SimulationRunner:
         finally:
             self.controller.cleanup()
 
-def run_simulation(actions: List[SimulationAction], data_generator: DataGenerator, steps: int = 100) -> bool:
-    """Main entry point for running a simulation"""
-    runner = SimulationRunner(actions, data_generator, steps)
-    success = runner.run()
+def move_tmp_directory(seed: int, steps: int) -> Path:
+    """Move tmp directory with seed and steps in name"""
+    src = Path("./tmp")
+    if not src.exists():
+        return None
 
-    if success:
-        dir_hash = hash_directory("./tmp")
-        console.print(f"[cyan]Directory Hash:[/] {dir_hash}")
+    dst = Path(f"./tmp/seed{seed}_steps{steps}")
+    if dst.exists():
+        shutil.rmtree(dst)
 
-def hash_directory(path: str) -> str:
-    """Generate a deterministic hash of a directory's contents"""
-    sha256_hash = hashlib.sha256()
+    shutil.copytree(src, dst)
+    return dst
 
-    # Walk directory in sorted order for determinism
-    for root, dirs, files in sorted(os.walk(path)):
-        # Hash directory names
-        for dir_name in sorted(dirs):
-            sha256_hash.update(dir_name.encode())
+def compare_runs(dir1: Path, dir2: Path) -> bool:
+    """Compare two directories using system diff command"""
+    try:
+        result = subprocess.run(
+            ["diff", "-ru", str(dir1), str(dir2)],
+            capture_output=True,
+            text=True
+        )
 
-        # Hash file contents
-        for file_name in sorted(files):
-            file_path = os.path.join(root, file_name)
-            # Hash file name
-            sha256_hash.update(file_name.encode())
-            # Hash file content
-            with open(file_path, 'rb') as f:
-                for chunk in iter(lambda: f.read(4096), b''):
-                    sha256_hash.update(chunk)
+        if result.returncode == 0:
+            console.print("\n[green]Success: Both runs produced identical results![/]")
+            return True
+        else:
+            console.print("\n[red]Warning: Differences found between runs![/]")
+            console.print(result.stdout)
+            return False
 
-    return sha256_hash.hexdigest()
+    except subprocess.CalledProcessError as e:
+        console.print(f"[red]Error running diff: {e}[/]")
+        return False
+
+def run_simulation_with_comparison(actions: List[SimulationAction], seed: int, steps: int = 100) -> bool:
+    """Run two identical simulations and compare results"""
+    # First run
+    console.print("\n[bold magenta]Running first simulation...[/]")
+    runner1 = SimulationRunner(actions, seed, steps)
+    success1 = runner1.run()
+    if not success1:
+        return False
+
+    # Move first run results
+    dir1 = move_tmp_directory(seed, steps)
+
+    # Second run
+    console.print("\n[bold magenta]Running second simulation...[/]")
+    runner2 = SimulationRunner(actions, seed, steps)
+    success2 = runner2.run()
+    if not success2:
+        return False
+
+    # Compare results using system diff
+    return compare_runs(dir1, Path("./tmp"))
+
+def run_simulation(actions: List[SimulationAction], seed: int, steps: int = 100) -> bool:
+    """Main entry point for running a simulation with comparison"""
+    return run_simulation_with_comparison(actions, seed, steps)

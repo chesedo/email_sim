@@ -3,6 +3,8 @@ import requests
 from python_on_whales import DockerClient
 from pathlib import Path
 import random
+import shutil
+import subprocess
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -12,6 +14,9 @@ console = Console()
 
 class DockerTimeController:
     def __init__(self):
+        if not ensure_mail_directory():
+            raise RuntimeError("Could not set up mail directory with correct permissions")
+
         # Generate a random time between 2020 and 2030
         start = datetime(2020, 1, 1)
         end = datetime(2030, 12, 31)
@@ -94,3 +99,47 @@ class DockerTimeController:
             title="DST Cleanup",
             border_style="yellow"
         ))
+
+def ensure_mail_directory() -> bool:
+    """Ensures mail directory exists with correct permissions"""
+    mail_dir = Path("./tmp/mail")
+    if mail_dir.exists():
+        try:
+            shutil.rmtree(mail_dir)
+        except PermissionError:
+            console.print("[yellow]Need sudo permissions to delete mail directory.[/]")
+            try:
+                subprocess.run(
+                    ["sudo", "rm", "-R", str(mail_dir)],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+            except subprocess.CalledProcessError as e:
+                console.print(f"[red]Failed to delete directory: {e.stderr}[/]")
+                return False
+            except Exception as e:
+                console.print(f"[red]Unexpected error deleting directory: {e}[/]")
+                return False
+
+    mail_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        shutil.chown(mail_dir, user=101)
+        return True
+    except PermissionError:
+        console.print("[yellow]Need sudo permissions to set mail directory ownership.[/]")
+        try:
+            subprocess.run(
+                ["sudo", "chown", "101", str(mail_dir)],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            return True
+        except subprocess.CalledProcessError as e:
+            console.print(f"[red]Failed to set directory permissions: {e.stderr}[/]")
+            return False
+        except Exception as e:
+            console.print(f"[red]Unexpected error setting permissions: {e}[/]")
+            return False

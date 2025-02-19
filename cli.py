@@ -29,8 +29,6 @@ def main():
         border_style="blue"
     ))
 
-    random.seed(args.seed)
-
     # Get all registered actions and instantiate them
     action_classes = get_available_actions()
 
@@ -43,9 +41,7 @@ def main():
 
     actions = [cls() for cls in action_classes.values()]
 
-    data_generator = DataGenerator(args.seed)
-
-    success = run_simulation(actions, data_generator, args.steps)
+    success = run_simulation(actions, args.seed, args.steps)
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":
