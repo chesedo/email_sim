@@ -1,20 +1,4 @@
 services:
-  timeserver:
-    build:
-      context: ./timeserver
-      dockerfile: Containerfile
-    ports:
-      - "8080"
-    environment:
-      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
-      - FAKETIME_TIMESTAMP_FILE=/tmp/faketime
-      - TZ=UTC
-    volumes:
-      - ./tmp/faketime:/tmp/faketime:ro
-    networks:
-      dst_net:
-        ipv4_address: 172.28.0.10
-
   exim_send:
     build:
       context: ./exim
