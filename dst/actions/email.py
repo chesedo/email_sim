@@ -115,17 +115,9 @@ class SendBasicEmail(SimulationAction):
 
             generated_email = data_generator.generate_email(date = current_time)
 
-            # Get the sending exim container and its port
-            exim_send = controller.containers['exim_send']
-            port_mappings = exim_send.network_settings.ports["25/tcp"]
-            if not port_mappings:
-                raise RuntimeError("Could not find mapped port for sending MTA")
-
-            send_port = int(port_mappings[0]["HostPort"])
-
             # Use localhost and mapped port to send email
             success = asyncio.run(
-                self.send_test_email("localhost", send_port, generated_email.build_email(), controller)
+                self.send_test_email("localhost", controller.send_port, generated_email.build_email(), controller)
             )
 
             if not success:

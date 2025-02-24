@@ -69,6 +69,14 @@ class DockerTimeController:
         console.print(table)
         console.print()
 
+        # Get the sending exim container and its port
+        exim_send = self.containers['exim_send']
+        port_mappings = exim_send.network_settings.ports["25/tcp"]
+        if not port_mappings:
+            raise RuntimeError("Could not find mapped port for sending MTA")
+
+        self.send_port = int(port_mappings[0]["HostPort"])
+
     def get_send_queue_size(self) -> int:
         """Get the current size of the send queue"""
         response = self.docker.compose.execute(service="exim_send", command=["exim", "-bpc"], tty=False)
