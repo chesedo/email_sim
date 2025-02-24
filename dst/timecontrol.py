@@ -1,9 +1,9 @@
 from pathlib import Path
 from datetime import datetime
 import threading
-from rich.console import Console
+import logging
 
-console = Console()
+logger = logging.getLogger("dst")
 
 class TimeControl:
     """Controls time synchronization across services via a shared file"""
@@ -19,7 +19,7 @@ class TimeControl:
         with self._lock:
             timestamp = new_time.strftime("%Y-%m-%d %H:%M:%S.%f")
             self.time_file.write_text(timestamp)
-            console.print(f"[cyan]Updated shared time to:[/] [yellow]{timestamp}[/]")
+            logger.info(f"Updated shared time to: {timestamp}")
 
     def get_time(self) -> datetime:
         """Read the current time from the shared file"""

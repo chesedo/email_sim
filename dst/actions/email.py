@@ -6,14 +6,14 @@ import asyncio
 import aiosmtplib
 import time
 from datetime import datetime
-from rich.console import Console
+import logging
 from dst.actions import SimulationAction, register_action
 from dst.controller import DockerTimeController
 from dst.generator import GeneratedEmail
 
 from dst.generator import DataGenerator
 
-console = Console()
+logger = logging.getLogger("dst")
 
 class EmailValidator:
     """Validates that an email was received correctly"""
@@ -37,11 +37,11 @@ class EmailValidator:
                 email_msg = message_from_bytes(email_content)
 
                 if email_msg["Subject"] != self.generated_email.subject:
-                    console.print(f"[red]Subject mismatch:[/]\nExpected: {email_msg['Subject']}\nReceived: {self.generated_email.subject}")
+                    logger.error(f"Subject mismatch: Expected: {self.generated_email.subject}, Received: {email_msg['Subject']}")
                     return False
 
                 if email_msg["Date"] != self.generated_email.date.strftime("%a, %d %b %Y %H:%M:%S +0000"):
-                    console.print(f"[red]Date mismatch:[/]\nExpected: {email_msg['Date']}\nReceived: {self.generated_email.date.strftime('%a, %d %b %Y %H:%M:%S +0000')}")
+                    logger.error(f"Date mismatch: Expected: {self.generated_email.date.strftime('%a, %d %b %Y %H:%M:%S +0000')}, Received: {email_msg['Date']}")
                     return False
 
                 payload = email_msg.get_payload()
@@ -49,19 +49,19 @@ class EmailValidator:
                 for part in payload:
                     if part.get_content_type() == "text/plain":
                         if part.get_payload() != self.generated_email.text_content:
-                            console.print(f"[red]Text content mismatch:[/]\nExpected: {part.get_payload()}\nReceived: {self.generated_email.text_content}")
+                            logger.error("Text content mismatch")
                             return False
                     elif part.get_content_type() == "text/html":
                         if part.get_payload() != self.generated_email.html_content:
-                            console.print(f"[red]HTML content mismatch:[/]\nExpected: {part.get_payload()}\nReceived: {self.generated_email.html_content}")
+                            logger.error("HTML content mismatch")
                             return False
 
                 return True
             except Exception as e:
-                console.print(f"[red]Error reading email: {e}[/]")
+                logger.error(f"Error reading email: {e}")
                 return False
 
-        console.print(f"[red]Email file not found: {expected_file}[/]")
+        # Email file not found yet
         return False
 
 @register_action
@@ -81,14 +81,14 @@ class SendBasicEmail(SimulationAction):
 
             # Start connection process
             connect_task = asyncio.create_task(smtp.connect())
-            console.print(f"[cyan]Connecting to SMTP server at {host}:{port}...[/]")
+            logger.info(f"Connecting to SMTP server at {host}:{port}...")
 
             # Check connection result
             await connect_task
 
             # Start send process
             send_task = asyncio.create_task(smtp.send_message(email))
-            console.print(f"[cyan]Sending email...[/]")
+            logger.info("Sending email...")
 
             await controller.wait_to_reach_send_queue()
             controller.set_time(controller.get_time() + timedelta(milliseconds=100))
@@ -102,14 +102,14 @@ class SendBasicEmail(SimulationAction):
             return True
 
         except Exception as e:
-            console.print(f"[red]Failed to send email: {e}[/]")
+            logger.error(f"Failed to send email: {e}")
             return False
 
     def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> bool:
         try:
             # Get current simulated time
             current_time = controller.get_time()
-            console.print(f"[cyan]Sending email at simulated time: {current_time}[/]")
+            logger.info(f"Sending email at simulated time: {current_time}")
 
             generated_email = data_generator.generate_email(date = current_time)
 
@@ -136,17 +136,17 @@ class SendBasicEmail(SimulationAction):
                 # Check if we need to timeout
                 elapsed = (datetime.now() - start_validate_time).total_seconds()
                 if elapsed > timeout_seconds:
-                    console.print(f"[red]Validation timed out after {elapsed:.2f} seconds[/]")
+                    logger.error(f"Validation timed out after {elapsed:.2f} seconds")
                     return False
 
                 # Try to validate
                 if validator.validate(controller):
-                    console.print(f"[green]Email validated successfully after {elapsed:.2f} seconds[/]")
+                    logger.info(f"Email validated successfully after {elapsed:.2f} seconds")
                     return True
 
                 # Brief pause before trying again
                 time.sleep(0.01)
 
         except Exception as e:
-            console.print(f"[red]Error in SendBasicEmail action: {e}[/]")
+            logger.error(f"Error in SendBasicEmail action: {e}")
             return False

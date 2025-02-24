@@ -7,13 +7,11 @@ import random
 import time
 import shutil
 import subprocess
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
+import logging
 from rich.progress import Progress, SpinnerColumn
 from dst.timecontrol import TimeControl
 
-console = Console()
+logger = logging.getLogger("dst")
 
 class DockerTimeController:
     def __init__(self):
@@ -28,10 +26,7 @@ class DockerTimeController:
         random_seconds = random.randint(0, 24*60*60 - 1)
 
         self.initial_time = start + timedelta(days=random_days, seconds=random_seconds)
-        console.print(Panel.fit(
-            f"[cyan]Initial simulation time:[/] [yellow]{self.initial_time}[/]",
-            title="DST Environment Setup"
-        ))
+        logger.info(f"Initial simulation time: {self.initial_time}")
 
         # Initialize time control
         self.time_control = TimeControl(self.initial_time)
@@ -43,7 +38,6 @@ class DockerTimeController:
         with Progress(
             SpinnerColumn(),
             "[progress.description]{task.description}",
-            console=console
         ) as progress:
             progress.add_task("[cyan]Starting Docker services...", total=None)
             self.docker.compose.up(
@@ -62,12 +56,10 @@ class DockerTimeController:
             for container in containers
         }
 
-        # Display available services in a table
-        table = Table(show_header=False, title="Available Services", border_style="cyan")
+        # Log available services
+        logger.info("Available services:")
         for service in self.containers.keys():
-            table.add_row(f"[green]•[/] {service}")
-        console.print(table)
-        console.print()
+            logger.info(f"• {service}")
 
         # Get the sending exim container and its port
         exim_send = self.containers['exim_send']
@@ -134,7 +126,6 @@ class DockerTimeController:
             with Progress(
                 SpinnerColumn(),
                 "[progress.description]{task.description}",
-                console=console
             ) as progress:
                 progress.add_task("[yellow]Stopping Docker services...", total=None)
                 self.docker.compose.down(volumes=True)
@@ -142,11 +133,7 @@ class DockerTimeController:
         if hasattr(self, 'time_control'):
             self.time_control.cleanup()
 
-        console.print(Panel.fit(
-            "[green]Environment cleanup completed[/]",
-            title="DST Cleanup",
-            border_style="yellow"
-        ))
+        logger.info("Environment cleanup completed")
 
 def ensure_mail_directory() -> bool:
     """Ensures mail directory exists with correct permissions"""
@@ -155,7 +142,7 @@ def ensure_mail_directory() -> bool:
         try:
             shutil.rmtree(mail_dir)
         except PermissionError:
-            console.print("[yellow]Need sudo permissions to delete mail directory.[/]")
+            logger.warning("Need sudo permissions to delete mail directory.")
             try:
                 subprocess.run(
                     ["sudo", "rm", "-R", str(mail_dir)],
@@ -164,10 +151,10 @@ def ensure_mail_directory() -> bool:
                     check=True
                 )
             except subprocess.CalledProcessError as e:
-                console.print(f"[red]Failed to delete directory: {e.stderr}[/]")
+                logger.error(f"Failed to delete directory: {e.stderr}")
                 return False
             except Exception as e:
-                console.print(f"[red]Unexpected error deleting directory: {e}[/]")
+                logger.error(f"Unexpected error deleting directory: {e}")
                 return False
 
     mail_dir.mkdir(parents=True, exist_ok=True)
@@ -176,7 +163,7 @@ def ensure_mail_directory() -> bool:
         shutil.chown(mail_dir, user=101)
         return True
     except PermissionError:
-        console.print("[yellow]Need sudo permissions to set mail directory ownership.[/]")
+        logger.warning("Need sudo permissions to set mail directory ownership.")
         try:
             subprocess.run(
                 ["sudo", "chown", "101", str(mail_dir)],
@@ -186,8 +173,8 @@ def ensure_mail_directory() -> bool:
             )
             return True
         except subprocess.CalledProcessError as e:
-            console.print(f"[red]Failed to set directory permissions: {e.stderr}[/]")
+            logger.error(f"Failed to set directory permissions: {e.stderr}")
             return False
         except Exception as e:
-            console.print(f"[red]Unexpected error setting permissions: {e}[/]")
+            logger.error(f"Unexpected error setting permissions: {e}")
             return False
