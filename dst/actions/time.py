@@ -1,10 +1,13 @@
 import time
 import random
+from datetime import timedelta
 from dst.actions import SimulationAction, ValidationAction, register_action
 from dst.controller import DockerTimeController
+from rich.console import Console
 from typing import Optional
-
 from dst.generator import DataGenerator
+
+console = Console()
 
 @register_action
 class WaitRandomDuration(SimulationAction):
@@ -29,4 +32,31 @@ class WaitRandomDuration(SimulationAction):
             return True, None
         except Exception as e:
             print(f"Error during random wait: {e}")
+            return False, None
+
+@register_action
+class AdvanceTime(SimulationAction):
+    """Advances time by a random duration"""
+
+    @property
+    def weight(self) -> float:
+        """Give this action a high weight since time needs to advance frequently"""
+        return 10.0  # Much higher weight than other actions
+
+    def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> tuple[bool, Optional[None]]:
+        try:
+            # Get current time
+            current_time = controller.get_time()
+
+            # Advance by random amount of milliseconds (between 1ms and 100ms)
+            advance_ms = random.randint(10, 100)
+            new_time = current_time + timedelta(milliseconds=advance_ms)
+
+            console.print(f"[cyan]Advancing time by {advance_ms} milliseconds...[/]")
+            controller.set_time(new_time)
+
+            return True, None
+
+        except Exception as e:
+            console.print(f"[red]Error advancing time: {e}[/]")
             return False, None

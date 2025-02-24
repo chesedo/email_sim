@@ -1,3 +1,4 @@
+from datetime import timedelta
 import random
 import time
 import threading
@@ -175,9 +176,13 @@ class SimulationRunner:
                 else:
                     console.print("[bold green]Simulation completed successfully! ✨")
 
+            if success:
+                self.controller.cleanup()
+
             return success
-        finally:
-            self.controller.cleanup()
+        except:
+            console.print("[bold red]Simulation failed due to unexpected error")
+            return False
 
 def move_tmp_directory(seed: int, steps: int) -> Path:
     """Move tmp directory with seed and steps in name"""

@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn
+from dst.timecontrol import TimeControl
 
 console = Console()
 
@@ -30,13 +31,8 @@ class DockerTimeController:
             title="DST Environment Setup"
         ))
 
-        # Set up environment with our static time
-        faketime_timestamp = self.initial_time.strftime("@%Y-%m-%d %H:%M:%S")
-
-        # Create env file next to compose.yaml
-        project_dir = Path.cwd()
-        self.env_path = project_dir / "tmp.env"
-        self.env_path.write_text(f"FAKETIME={faketime_timestamp}\n")
+        # Initialize time control
+        self.time_control = TimeControl(self.initial_time)
 
         self.docker = DockerClient()
 
@@ -71,15 +67,13 @@ class DockerTimeController:
         console.print(table)
         console.print()
 
-    def get_time(self):
-        timeserver = self.containers['timeserver']
-        port_mappings = timeserver.network_settings.ports["8080/tcp"]
-        if not port_mappings:
-            raise RuntimeError("Could not find mapped port")
+    def get_time(self) -> datetime:
+        """Get the current simulation time"""
+        return self.time_control.get_time()
 
-        host_port = port_mappings[0]["HostPort"]
-        response = requests.get(f"http://localhost:{host_port}/time")
-        return datetime.strptime(response.json()['current_time'], '%Y-%m-%d %H:%M:%S')
+    def set_time(self, new_time: datetime) -> None:
+        """Set a new simulation time"""
+        self.time_control.set_time(new_time)
 
     def cleanup(self):
         if self.docker:
@@ -91,8 +85,8 @@ class DockerTimeController:
                 progress.add_task("[yellow]Stopping Docker services...", total=None)
                 self.docker.compose.down(volumes=True)
 
-        if self.env_path.exists():
-            self.env_path.unlink()
+        if hasattr(self, 'time_control'):
+            self.time_control.cleanup()
 
         console.print(Panel.fit(
             "[green]Environment cleanup completed[/]",
