@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 import requests
+import asyncio
 from python_on_whales import DockerClient
 from pathlib import Path
 import random
+import time
 import shutil
 import subprocess
 from rich.console import Console
@@ -66,6 +68,50 @@ class DockerTimeController:
             table.add_row(f"[green]•[/] {service}")
         console.print(table)
         console.print()
+
+    def get_send_queue_size(self) -> int:
+        """Get the current size of the send queue"""
+        response = self.docker.compose.execute(service="exim_send", command=["exim", "-bpc"], tty=False)
+
+        if response is None:
+            return 0
+
+        try:
+            return int(response)
+        except ValueError:
+            return 0
+
+    async def wait_to_reach_send_queue(self) -> None:
+        """Wait until the send queue has one email"""
+        while True:
+            queue_size = self.get_send_queue_size()
+
+            if queue_size == 1:
+                return
+
+            await asyncio.sleep(0.01)
+
+    def get_receive_queue_size(self) -> int:
+        """Get the current size of the send queue"""
+        response = self.docker.compose.execute(service="exim_receive", command=["exim", "-bpc"], tty=False)
+
+        if response is None:
+            return 0
+
+        try:
+            return int(response)
+        except ValueError:
+            return 0
+
+    def wait_to_reach_receive_queue(self) -> None:
+        """Wait until the receive queue has one email"""
+        while True:
+            queue_size = self.get_receive_queue_size()
+
+            if queue_size == 1:
+                return
+
+            time.sleep(0.01)
 
     def get_time(self) -> datetime:
         """Get the current simulation time"""

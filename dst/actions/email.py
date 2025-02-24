@@ -84,7 +84,6 @@ class SendBasicEmail(SimulationAction):
             # Start connection process
             connect_task = asyncio.create_task(smtp.connect())
             console.print(f"[cyan]Connecting to SMTP server at {host}:{port}...[/]")
-            controller.set_time(controller.get_time() + timedelta(milliseconds=100))
 
             # Check connection result
             await connect_task
@@ -92,6 +91,8 @@ class SendBasicEmail(SimulationAction):
             # Start send process
             send_task = asyncio.create_task(smtp.send_message(email))
             console.print(f"[cyan]Sending email...[/]")
+
+            await controller.wait_to_reach_send_queue()
             controller.set_time(controller.get_time() + timedelta(milliseconds=100))
 
             # Check send result
@@ -99,9 +100,6 @@ class SendBasicEmail(SimulationAction):
 
             # Close connection
             await smtp.quit()
-
-            # Wait for email to be processed
-            await asyncio.sleep(0.01)
 
             return True
 
@@ -134,6 +132,7 @@ class SendBasicEmail(SimulationAction):
                 return False, None
 
             # Wait for receiver to get the email
+            controller.wait_to_reach_receive_queue()
             controller.set_time(controller.get_time() + timedelta(milliseconds=100))
 
             # Create validator
