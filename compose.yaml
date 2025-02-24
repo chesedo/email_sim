@@ -11,6 +11,7 @@ services:
     environment:
       - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
       - FAKETIME_TIMESTAMP_FILE=/tmp/faketime
+      - FAKETIME_CACHE_DURATION=0.1 # We need this else the default cache of 10 seconds adds quite a bit of a delay
       - TZ=UTC
     networks:
       dst_net:
@@ -33,6 +34,7 @@ services:
     environment:
       - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
       - FAKETIME_TIMESTAMP_FILE=/tmp/faketime
+      - FAKETIME_CACHE_DURATION=0.1 # We need this else the default cache of 10 seconds adds quite a bit of a delay
       - TZ=UTC
     networks:
       dst_net:

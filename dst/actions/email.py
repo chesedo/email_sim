@@ -1,8 +1,10 @@
+from datetime import timedelta
 from email.message import EmailMessage
 from email import message_from_bytes
 from pathlib import Path
 import asyncio
 import aiosmtplib
+import time
 from datetime import datetime
 from rich.console import Console
 from dst.actions import SimulationAction, ValidationAction, register_action
@@ -68,17 +70,41 @@ class EmailValidator(ValidationAction):
 class SendBasicEmail(SimulationAction):
     """Sends a basic test email from the sending MTA to the receiving MTA"""
 
-    async def send_test_email(self, host: str, port: int, email: EmailMessage) -> bool:
+    async def send_test_email(self, host: str, port: int, email: EmailMessage, controller: DockerTimeController) -> bool:
         try:
-            await aiosmtplib.send(
-                email,
+            # Create SMTP connection
+            smtp = aiosmtplib.SMTP(
                 hostname=host,
                 port=port,
                 timeout=5,
-                start_tls=False,
+                use_tls=False,
                 validate_certs=False,
             )
+
+            # Start connection process
+            connect_task = asyncio.create_task(smtp.connect())
+            console.print(f"[cyan]Connecting to SMTP server at {host}:{port}...[/]")
+            controller.set_time(controller.get_time() + timedelta(milliseconds=100))
+
+            # Check connection result
+            await connect_task
+
+            # Start send process
+            send_task = asyncio.create_task(smtp.send_message(email))
+            console.print(f"[cyan]Sending email...[/]")
+            controller.set_time(controller.get_time() + timedelta(milliseconds=100))
+
+            # Check send result
+            await send_task
+
+            # Close connection
+            await smtp.quit()
+
+            # Wait for email to be processed
+            await asyncio.sleep(0.01)
+
             return True
+
         except Exception as e:
             console.print(f"[red]Failed to send email: {e}[/]")
             return False
@@ -101,11 +127,14 @@ class SendBasicEmail(SimulationAction):
 
             # Use localhost and mapped port to send email
             success = asyncio.run(
-                self.send_test_email("localhost", send_port, generated_email.build_email())
+                self.send_test_email("localhost", send_port, generated_email.build_email(), controller)
             )
 
             if not success:
                 return False, None
+
+            # Wait for receiver to get the email
+            controller.set_time(controller.get_time() + timedelta(milliseconds=100))
 
             # Create validator
             validator = EmailValidator(
@@ -113,7 +142,24 @@ class SendBasicEmail(SimulationAction):
                 generated_email=generated_email
             )
 
-            return True, validator
+            # Try validation with retry/timeout
+            start_validate_time = datetime.now()
+            timeout_seconds = validator.timeout
+
+            while True:
+                # Check if we need to timeout
+                elapsed = (datetime.now() - start_validate_time).total_seconds()
+                if elapsed > timeout_seconds:
+                    console.print(f"[red]Validation timed out after {elapsed:.2f} seconds[/]")
+                    return False, None
+
+                # Try to validate
+                if validator.validate(controller):
+                    console.print(f"[green]Email validated successfully after {elapsed:.2f} seconds[/]")
+                    return True, None
+
+                # Brief pause before trying again
+                time.sleep(0.01)
 
         except Exception as e:
             console.print(f"[red]Error in SendBasicEmail action: {e}[/]")

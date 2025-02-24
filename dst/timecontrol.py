@@ -17,18 +17,18 @@ class TimeControl:
     def set_time(self, new_time: datetime) -> None:
         """Set the current time in the shared file"""
         with self._lock:
-            timestamp = new_time.strftime("@%Y-%m-%d %H:%M:%S.%f")
+            timestamp = new_time.strftime("%Y-%m-%d %H:%M:%S.%f")
             self.time_file.write_text(timestamp)
             console.print(f"[cyan]Updated shared time to:[/] [yellow]{timestamp}[/]")
 
     def get_time(self) -> datetime:
         """Read the current time from the shared file"""
         with self._lock:
-            timestamp = self.time_file.read_text().strip().strip("@")
+            timestamp = self.time_file.read_text().strip()
             # Remove @ prefix for parsing
             return datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
 
     def cleanup(self) -> None:
         """Clean up time control resources"""
-        # if self.time_file.exists():
-        #     self.time_file.unlink()
+        if self.time_file.exists():
+            self.time_file.unlink()
