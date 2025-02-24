@@ -186,7 +186,7 @@ class SimulationRunner:
 
 def move_tmp_directory(seed: int, steps: int) -> Path:
     """Move tmp directory with seed and steps in name"""
-    src = Path("./tmp")
+    src = Path("./tmp/mail")
     if not src.exists():
         return None
 
@@ -238,7 +238,7 @@ def run_simulation_with_comparison(actions: List[SimulationAction], seed: int, s
         return False
 
     # Compare results using system diff
-    return compare_runs(dir1, Path("./tmp"))
+    return compare_runs(dir1, Path("./tmp/mail"))
 
 def run_simulation(actions: List[SimulationAction], seed: int, steps: int = 100) -> bool:
     """Main entry point for running a simulation with comparison"""
