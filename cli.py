@@ -8,7 +8,6 @@ from rich.panel import Panel
 from rich.table import Table
 from dst.simulation import run_simulation
 from dst.actions import get_available_actions
-from dst.generator import DataGenerator
 
 console = Console()
 
@@ -32,14 +31,29 @@ def main():
     # Get all registered actions and instantiate them
     action_classes = get_available_actions()
 
-    # Display available actions in a table
-    table = Table(show_header=False, title="Available Actions", border_style="blue")
-    for action_name in action_classes.keys():
-        table.add_row(f"[green]•[/] {action_name}")
+    # Instantiate actions to get their weights
+    actions = [cls() for cls in action_classes.values()]
+
+    # Calculate total weight for normalization
+    total_weight = sum(action.weight for action in actions)
+
+    # Display available actions in a table with weights
+    table = Table(title="Available Actions", border_style="blue")
+    table.add_column("Action", style="green")
+    table.add_column("Weight", style="yellow")
+    table.add_column("Normalized Weight", style="cyan")
+
+    for i, action in enumerate(actions):
+        action_name = action.__class__.__name__
+        normalized_weight = action.weight / total_weight
+        table.add_row(
+            action_name,
+            f"{action.weight:.2f}",
+            f"{normalized_weight:.4f}"
+        )
+
     console.print(table)
     console.print()
-
-    actions = [cls() for cls in action_classes.values()]
 
     success = run_simulation(actions, args.seed, args.steps)
     sys.exit(0 if success else 1)

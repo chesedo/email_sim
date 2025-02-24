@@ -36,14 +36,8 @@ class SimulationRunner:
             action_name = action.__class__.__name__
             self.completed_steps += 1
 
-            # Log step info with weight information
-            table = Table(show_header=False, box=None)
-            table.add_row(
-                f"[bold cyan]Step {self.completed_steps}/{self.steps}",
-                f"[blue]Action: {action_name}",
-                f"[dim](weight: {action.weight})"
-            )
-            console.print(table)
+            # Log step info
+            console.print(f"[bold cyan]Step {self.completed_steps}/{self.steps}[/] [blue]Action: {action_name}[/]")
 
             # Execute the action
             success = action(self.controller, self.data_generator)
