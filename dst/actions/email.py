@@ -7,20 +7,18 @@ import aiosmtplib
 import time
 from datetime import datetime
 from rich.console import Console
-from dst.actions import SimulationAction, ValidationAction, register_action
+from dst.actions import SimulationAction, register_action
 from dst.controller import DockerTimeController
 from dst.generator import GeneratedEmail
-from typing import Optional
 
 from dst.generator import DataGenerator
 
 console = Console()
 
-class EmailValidator(ValidationAction):
+class EmailValidator:
     """Validates that an email was received correctly"""
 
-    def __init__(self, start_time: datetime, generated_email: GeneratedEmail):
-        super().__init__(start_time)
+    def __init__(self, generated_email: GeneratedEmail):
         self.generated_email = generated_email
         self.mail_dir = Path("./tmp/mail")
 
@@ -107,7 +105,7 @@ class SendBasicEmail(SimulationAction):
             console.print(f"[red]Failed to send email: {e}[/]")
             return False
 
-    def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> tuple[bool, Optional[ValidationAction]]:
+    def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> bool:
         try:
             # Get current simulated time
             current_time = controller.get_time()
@@ -121,17 +119,14 @@ class SendBasicEmail(SimulationAction):
             )
 
             if not success:
-                return False, None
+                return False
 
             # Wait for receiver to get the email
             controller.wait_to_reach_receive_queue()
             controller.set_time(controller.get_time() + timedelta(milliseconds=100))
 
             # Create validator
-            validator = EmailValidator(
-                start_time=current_time,
-                generated_email=generated_email
-            )
+            validator = EmailValidator(generated_email)
 
             # Try validation with retry/timeout
             start_validate_time = datetime.now()
@@ -142,16 +137,16 @@ class SendBasicEmail(SimulationAction):
                 elapsed = (datetime.now() - start_validate_time).total_seconds()
                 if elapsed > timeout_seconds:
                     console.print(f"[red]Validation timed out after {elapsed:.2f} seconds[/]")
-                    return False, None
+                    return False
 
                 # Try to validate
                 if validator.validate(controller):
                     console.print(f"[green]Email validated successfully after {elapsed:.2f} seconds[/]")
-                    return True, None
+                    return True
 
                 # Brief pause before trying again
                 time.sleep(0.01)
 
         except Exception as e:
             console.print(f"[red]Error in SendBasicEmail action: {e}[/]")
-            return False, None
+            return False

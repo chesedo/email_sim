@@ -1,18 +1,13 @@
-from datetime import timedelta
 import random
-import time
-import threading
 import shutil
 import subprocess
-from queue import Queue
-from concurrent.futures import ThreadPoolExecutor
 from typing import List
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
 from rich.panel import Panel
 from rich.table import Table
 from dst.controller import DockerTimeController
-from dst.actions import SimulationAction, ValidationAction
+from dst.actions import SimulationAction
 from dst.generator import DataGenerator
 from pathlib import Path
 
@@ -51,7 +46,7 @@ class SimulationRunner:
             console.print(table)
 
             # Execute the action
-            success, _ = action(self.controller, self.data_generator)
+            success = action(self.controller, self.data_generator)
             if not success:
                 console.print("[bold red]Action execution failed! ❌")
                 return False

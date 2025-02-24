@@ -1,10 +1,9 @@
 import time
 import random
 from datetime import timedelta
-from dst.actions import SimulationAction, ValidationAction, register_action
+from dst.actions import SimulationAction, register_action
 from dst.controller import DockerTimeController
 from rich.console import Console
-from typing import Optional
 from dst.generator import DataGenerator
 
 console = Console()
@@ -16,7 +15,7 @@ class WaitRandomDuration(SimulationAction):
         """Give this action a 1/100 chance of being selected"""
         return 0.01
 
-    def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> tuple[bool, Optional[ValidationAction]]:
+    def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> bool:
         try:
             duration = random.randint(1, 2)
             print(f"Waiting for {duration} seconds...")
@@ -28,11 +27,11 @@ class WaitRandomDuration(SimulationAction):
             time_difference = abs((after_time - before_time).total_seconds())
             if abs(time_difference - duration) > 0.1:
                 print(f"ERROR: Time progression incorrect. Expected {duration} seconds, got {time_difference}")
-                return False, None
-            return True, None
+                return False
+            return True
         except Exception as e:
             print(f"Error during random wait: {e}")
-            return False, None
+            return False
 
 @register_action
 class AdvanceTime(SimulationAction):
@@ -43,7 +42,7 @@ class AdvanceTime(SimulationAction):
         """Give this action a high weight since time needs to advance frequently"""
         return 10.0  # Much higher weight than other actions
 
-    def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> tuple[bool, Optional[None]]:
+    def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> bool:
         try:
             # Get current time
             current_time = controller.get_time()
@@ -55,8 +54,8 @@ class AdvanceTime(SimulationAction):
             console.print(f"[cyan]Advancing time by {advance_ms} milliseconds...[/]")
             controller.set_time(new_time)
 
-            return True, None
+            return True
 
         except Exception as e:
             console.print(f"[red]Error advancing time: {e}[/]")
-            return False, None
+            return False
