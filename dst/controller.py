@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import requests
 import asyncio
 from python_on_whales import DockerClient
 from pathlib import Path
@@ -8,13 +7,13 @@ import time
 import shutil
 import subprocess
 import logging
-from rich.progress import Progress, SpinnerColumn
+from rich.progress import Progress, TaskID
 from dst.timecontrol import TimeControl
 
 logger = logging.getLogger("dst")
 
 class DockerTimeController:
-    def __init__(self):
+    def __init__(self, progress: Progress, action_id: TaskID):
         if not ensure_mail_directory():
             raise RuntimeError("Could not set up mail directory with correct permissions")
 
@@ -34,17 +33,17 @@ class DockerTimeController:
         self.docker = DockerClient()
 
         # TODO change the ownership of the exim config files to `root`
+        self.progress = progress
+        self.action_id = action_id
+
         # Start the services using compose
-        with Progress(
-            SpinnerColumn(),
-            "[progress.description]{task.description}",
-        ) as progress:
-            progress.add_task("[cyan]Starting Docker services...", total=None)
-            self.docker.compose.up(
-                wait=True,
-                build=True,
-                recreate=True,
-            )
+        self.progress.update(self.action_id, advance=0, description="Starting Docker services")
+        self.docker.compose.up(
+            wait=True,
+            build=True,
+            recreate=True,
+            quiet=True,
+        )
 
         # Convert list of containers to a map by service name
         containers = self.docker.compose.ps()
@@ -123,12 +122,8 @@ class DockerTimeController:
 
     def cleanup(self):
         if self.docker:
-            with Progress(
-                SpinnerColumn(),
-                "[progress.description]{task.description}",
-            ) as progress:
-                progress.add_task("[yellow]Stopping Docker services...", total=None)
-                self.docker.compose.down(volumes=True)
+            self.progress.update(self.action_id, advance=0, description="Stopping Docker services")
+            self.docker.compose.down(volumes=True, quiet=True)
 
         if hasattr(self, 'time_control'):
             self.time_control.cleanup()
