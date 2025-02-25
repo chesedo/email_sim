@@ -1,25 +1,34 @@
 #!/usr/bin/env python3
 
-import sys
 import argparse
 import logging
 import random
-import datetime
-from dst.simulation import STEP_HEADER, run_simulation
-from dst.actions import get_available_actions
-from rich.panel import Panel
-from rich.live import Live
-from rich.table import Table
-from rich.logging import RichHandler
-from rich.console import RenderableType, Group, Console
-from rich.progress import Progress, SpinnerColumn, TaskID, TimeElapsedColumn, BarColumn, TextColumn
-from rich.layout import Layout
-from rich.text import Text
-from typing import List
+import sys
 from collections import deque
+from typing import List
+
+from rich.console import Console, Group, RenderableType
+from rich.layout import Layout
+from rich.live import Live
+from rich.logging import RichHandler
+from rich.panel import Panel
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TaskID,
+    TextColumn,
+    TimeElapsedColumn,
+)
+from rich.table import Table
+from rich.text import Text
+
+from dst.actions import get_available_actions
+from dst.simulation import STEP_HEADER, run_simulation
 
 # Create a custom console for our layout
 console = Console()
+
 
 # Create a custom rich handler for the layout
 class LayoutLogHandler(logging.Handler):
@@ -28,7 +37,7 @@ class LayoutLogHandler(logging.Handler):
         self.messages = deque()
 
     def emit(self, record: logging.LogRecord):
-    # Special case for step headers - no level name
+        # Special case for step headers - no level name
         if record.levelno == STEP_HEADER:
             self.messages.append(Text.from_markup(f"{record.getMessage()}"))
             return
@@ -47,7 +56,9 @@ class LayoutLogHandler(logging.Handler):
         level_name = record.levelname.ljust(7)
 
         # Create a Text object with markup enabled - no timestamp
-        self.messages.append(Text.from_markup(f"[{style}]{level_name}[/] {record.getMessage()}"))
+        self.messages.append(
+            Text.from_markup(f"[{style}]{level_name}[/] {record.getMessage()}")
+        )
 
     def get_renderables(self, height=None) -> List[RenderableType]:
         # If height is provided, return only the most recent messages that fit
@@ -59,8 +70,10 @@ class LayoutLogHandler(logging.Handler):
         # Otherwise return all messages
         return list(self.messages)
 
+
 class LogPanel:
     """Panel that shows the logs from our custom handler"""
+
     def __init__(self, log_handler: LayoutLogHandler):
         self.log_handler = log_handler
 
@@ -76,16 +89,13 @@ class LogPanel:
         return Panel(
             Group(*self.log_handler.get_renderables(height)),
             title="Logs",
-            border_style="blue"
+            border_style="blue",
         )
+
 
 # Set up our custom log handler
 layout_handler = LayoutLogHandler()
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(message)s",
-    handlers=[layout_handler]
-)
+logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[layout_handler])
 logger = logging.getLogger("dst")
 
 # Also add a console handler for main screen logs
@@ -93,18 +103,16 @@ console_handler = RichHandler(
     console=console,
     rich_tracebacks=True,
     markup=True,
-    enable_link_path=False  # For some reason this messes with the randomness and causes the second run to have a different sequence of random numbers
+    enable_link_path=False,  # For some reason this messes with the randomness and causes the second run to have a different sequence of random numbers
 )
 logger.addHandler(console_handler)
+
 
 def create_layout(steps: int) -> tuple[Layout, Progress, TaskID, TaskID]:
     """Create Rich layout for simulation display"""
     layout = Layout()
-    layout.split(
-        Layout(name="header", size=4),
-        Layout(name="body")
-    )
-        # Setup header with title and progress
+    layout.split(Layout(name="header", size=4), Layout(name="body"))
+    # Setup header with title and progress
     layout["header"].split_row(
         Layout(name="title", ratio=1),
         Layout(name="progress", ratio=2),
@@ -113,7 +121,7 @@ def create_layout(steps: int) -> tuple[Layout, Progress, TaskID, TaskID]:
     layout["title"].update(
         Panel(Text("DST Simulation", style="bold magenta"), border_style="magenta")
     )
-        # Create progress panel
+    # Create progress panel
     progress = Progress(
         SpinnerColumn(),
         TextColumn("[bold blue]{task.description}"),
@@ -124,18 +132,19 @@ def create_layout(steps: int) -> tuple[Layout, Progress, TaskID, TaskID]:
     )
     sim_number_id = progress.add_task("", total=2)
     action_id = progress.add_task("", total=steps)
-    layout["progress"].update(
-        Panel(progress, title="Progress", border_style="green")
-    )
-        # Set up the log panel in the body
+    layout["progress"].update(Panel(progress, title="Progress", border_style="green"))
+    # Set up the log panel in the body
     layout["body"].update(LogPanel(layout_handler))
 
     return layout, progress, sim_number_id, action_id
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Run time simulation')
-    parser.add_argument('--seed', type=int, help='Seed for random time generation')
-    parser.add_argument('--steps', type=int, default=2, help='Number of simulation steps')
+    parser = argparse.ArgumentParser(description="Run time simulation")
+    parser.add_argument("--seed", type=int, help="Seed for random time generation")
+    parser.add_argument(
+        "--steps", type=int, default=2, help="Number of simulation steps"
+    )
     args = parser.parse_args()
 
     if args.seed is None:
@@ -145,12 +154,14 @@ def main():
 
     with Live(layout, console=console, refresh_per_second=10):
         # Display initial configuration
-        console.print(Panel.fit(
-            f"[cyan]Random Seed:[/] [yellow]{args.seed}[/]\n"
-            f"[cyan]Simulation Steps:[/] [yellow]{args.steps}[/]",
-            title="DST Configuration",
-            border_style="blue"
-        ))
+        console.print(
+            Panel.fit(
+                f"[cyan]Random Seed:[/] [yellow]{args.seed}[/]\n"
+                f"[cyan]Simulation Steps:[/] [yellow]{args.steps}[/]",
+                title="DST Configuration",
+                border_style="blue",
+            )
+        )
 
         # Get all registered actions and instantiate them
         action_classes = get_available_actions()
@@ -171,16 +182,17 @@ def main():
             action_name = action.__class__.__name__
             normalized_weight = action.weight / total_weight
             table.add_row(
-                action_name,
-                f"{action.weight:.2f}",
-                f"{normalized_weight:.4f}"
+                action_name, f"{action.weight:.2f}", f"{normalized_weight:.4f}"
             )
 
         console.print(table)
         console.print()
 
-        success = run_simulation(actions, progress, sim_number_id, action_id, args.seed, args.steps)
+        success = run_simulation(
+            actions, progress, sim_number_id, action_id, args.seed, args.steps
+        )
         sys.exit(0 if success else 1)
+
 
 if __name__ == "__main__":
     main()

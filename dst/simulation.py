@@ -1,15 +1,16 @@
-import random
 import logging
+import random
 import shutil
 import subprocess
 import time
+from pathlib import Path
 from typing import List
 
 from rich.progress import Progress, TaskID
-from dst.controller import DockerTimeController
+
 from dst.actions import SimulationAction
+from dst.controller import DockerTimeController
 from dst.generator import DataGenerator
-from pathlib import Path
 
 logger = logging.getLogger("dst")
 
@@ -17,23 +18,33 @@ logger = logging.getLogger("dst")
 STEP_HEADER = 25  # Between INFO (20) and WARNING (30)
 logging.addLevelName(STEP_HEADER, "STEP")
 
+
 # Add a custom method to the logger class
 def step_header(self, message, *args, **kwargs):
     if self.isEnabledFor(STEP_HEADER):
         self._log(STEP_HEADER, message, args, **kwargs)
 
+
 # Add the method to the Logger class
 logging.Logger.step_header = step_header
 
+
 class SimulationRunner:
-    def __init__(self, actions: List[SimulationAction], progress: Progress, action_id: TaskID, seed: int, steps: int = 100):
+    def __init__(
+        self,
+        actions: List[SimulationAction],
+        progress: Progress,
+        action_id: TaskID,
+        seed: int,
+        steps: int = 100,
+    ):
         random.seed(seed)
 
         weights = [action.weight for action in actions]
         total_weight = sum(weights)
 
         self.actions = actions
-        self.normalized_weights = [w/total_weight for w in weights]
+        self.normalized_weights = [w / total_weight for w in weights]
         self.progress = progress
         self.action_id = action_id
         self.steps = steps
@@ -45,7 +56,9 @@ class SimulationRunner:
         """Execute a single action with enhanced step display"""
         try:
             # Select action based on weights
-            action = random.choices(self.actions, weights=self.normalized_weights, k=1)[0]
+            action = random.choices(self.actions, weights=self.normalized_weights, k=1)[
+                0
+            ]
 
             action_name = action.__class__.__name__
             self.completed_steps += 1
@@ -57,14 +70,18 @@ class SimulationRunner:
             logger.step_header(step_header)
 
             # Log action details with more context
-            logger.info(f"✓ Action: [bold]{action_name}[/bold] (weight: {action.weight:.2f})")
-            logger.info(f"✓ Time: {self.controller.get_time().strftime('%Y-%m-%d %H:%M:%S')}")
+            logger.info(
+                f"✓ Action: [bold]{action_name}[/bold] (weight: {action.weight:.2f})"
+            )
+            logger.info(
+                f"✓ Time: {self.controller.get_time().strftime('%Y-%m-%d %H:%M:%S')}"
+            )
 
             # Update progress in the UI
             self.progress.update(
                 self.action_id,
                 advance=0,
-                description=f"[cyan]{action_name} ({self.completed_steps}/{self.steps})"
+                description=f"[cyan]{action_name} ({self.completed_steps}/{self.steps})",
             )
 
             # Execute the action
@@ -82,7 +99,7 @@ class SimulationRunner:
             self.progress.update(
                 self.action_id,
                 advance=1,
-                description=f"Running simulation... ({self.completed_steps}/{self.steps})"
+                description=f"Running simulation... ({self.completed_steps}/{self.steps})",
             )
 
             return success
@@ -105,7 +122,9 @@ class SimulationRunner:
 
             while self.completed_steps < self.steps:
                 # Select action based on weights
-                action = random.choices(self.actions, weights=self.normalized_weights, k=1)[0]
+                action = random.choices(
+                    self.actions, weights=self.normalized_weights, k=1
+                )[0]
                 action_name = action.__class__.__name__
 
                 # Track action counts
@@ -136,7 +155,9 @@ class SimulationRunner:
 
             # Show action distribution
             logger.info(f"\nAction distribution:")
-            for action_name, count in sorted(action_counts.items(), key=lambda x: x[1], reverse=True):
+            for action_name, count in sorted(
+                action_counts.items(), key=lambda x: x[1], reverse=True
+            ):
                 percentage = (count / self.completed_steps) * 100
                 logger.info(f"  • {action_name}: {count} times ({percentage:.1f}%)")
 
@@ -148,6 +169,7 @@ class SimulationRunner:
             return success
         finally:
             self.controller.cleanup()
+
 
 def move_tmp_directory(seed: int, steps: int) -> Path:
     """Move tmp directory with seed and steps in name"""
@@ -162,13 +184,12 @@ def move_tmp_directory(seed: int, steps: int) -> Path:
     shutil.copytree(src, dst)
     return dst
 
+
 def compare_runs(dir1: Path, dir2: Path) -> bool:
     """Compare two directories using system diff command"""
     try:
         result = subprocess.run(
-            ["diff", "-ru", str(dir1), str(dir2)],
-            capture_output=True,
-            text=True
+            ["diff", "-ru", str(dir1), str(dir2)], capture_output=True, text=True
         )
 
         if result.returncode == 0:
@@ -178,11 +199,11 @@ def compare_runs(dir1: Path, dir2: Path) -> bool:
             logger.warning("Warning: Differences found between runs!")
             # For large diffs, this would be better in a scrollable panel
             # but for now, just output the first few lines
-            diff_output = result.stdout.split('\n')[:20]
+            diff_output = result.stdout.split("\n")[:20]
             for line in diff_output:
-                if line.startswith('+'):
+                if line.startswith("+"):
                     logger.info(f"[green]{line}[/green]")
-                elif line.startswith('-'):
+                elif line.startswith("-"):
                     logger.info(f"[red]{line}[/red]")
                 else:
                     logger.info(line)
@@ -192,7 +213,15 @@ def compare_runs(dir1: Path, dir2: Path) -> bool:
         logger.error(f"Error running diff: {e}")
         return False
 
-def run_simulation_with_comparison(actions: List[SimulationAction], progress: Progress, sim_number_id, action_id: TaskID, seed: int, steps: int = 100) -> bool:
+
+def run_simulation_with_comparison(
+    actions: List[SimulationAction],
+    progress: Progress,
+    sim_number_id,
+    action_id: TaskID,
+    seed: int,
+    steps: int = 100,
+) -> bool:
     """Run two identical simulations and compare results"""
     # First run
     logger.info("Running first simulation...")
@@ -218,6 +247,16 @@ def run_simulation_with_comparison(actions: List[SimulationAction], progress: Pr
     progress.update(sim_number_id, advance=0.5, description="Getting diff")
     return compare_runs(dir1, Path("./tmp/mail"))
 
-def run_simulation(actions: List[SimulationAction], progress: Progress, sim_number_id: TaskID, action_id: TaskID, seed: int, steps: int = 100) -> bool:
+
+def run_simulation(
+    actions: List[SimulationAction],
+    progress: Progress,
+    sim_number_id: TaskID,
+    action_id: TaskID,
+    seed: int,
+    steps: int = 100,
+) -> bool:
     """Main entry point for running a simulation with comparison"""
-    return run_simulation_with_comparison(actions, progress, sim_number_id, action_id, seed, steps)
+    return run_simulation_with_comparison(
+        actions, progress, sim_number_id, action_id, seed, steps
+    )

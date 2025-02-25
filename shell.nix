@@ -12,6 +12,8 @@ pkgs.mkShell {
     python3Packages.faker
     python3Packages.jinja2
     python3Packages.pip
+    python3Packages.isort # To sort imports
+    python3Packages.black # For formating
     pyright
     docker
     swaks

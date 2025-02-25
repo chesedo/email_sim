@@ -1,9 +1,10 @@
-from pathlib import Path
-from datetime import datetime
-import threading
 import logging
+import threading
+from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("dst")
+
 
 class TimeControl:
     """Controls time synchronization across services via a shared file"""

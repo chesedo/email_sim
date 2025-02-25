@@ -1,28 +1,33 @@
-from datetime import datetime, timedelta
 import asyncio
-from python_on_whales import DockerClient
-from pathlib import Path
+import logging
 import random
-import time
 import shutil
 import subprocess
-import logging
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
+
+from python_on_whales import DockerClient
 from rich.progress import Progress, TaskID
+
 from dst.timecontrol import TimeControl
 
 logger = logging.getLogger("dst")
 
+
 class DockerTimeController:
     def __init__(self, progress: Progress, action_id: TaskID):
         if not ensure_mail_directory():
-            raise RuntimeError("Could not set up mail directory with correct permissions")
+            raise RuntimeError(
+                "Could not set up mail directory with correct permissions"
+            )
 
         # Generate a random time between 2020 and 2030
         start = datetime(2020, 1, 1)
         end = datetime(2030, 12, 31)
         days_between = (end - start).days
         random_days = random.randint(0, days_between)
-        random_seconds = random.randint(0, 24*60*60 - 1)
+        random_seconds = random.randint(0, 24 * 60 * 60 - 1)
 
         self.initial_time = start + timedelta(days=random_days, seconds=random_seconds)
         logger.info(f"Initial simulation time: {self.initial_time}")
@@ -37,7 +42,9 @@ class DockerTimeController:
         self.action_id = action_id
 
         # Start the services using compose
-        self.progress.update(self.action_id, advance=0, description="Starting Docker services")
+        self.progress.update(
+            self.action_id, advance=0, description="Starting Docker services"
+        )
         self.docker.compose.up(
             wait=True,
             build=True,
@@ -51,8 +58,7 @@ class DockerTimeController:
             raise RuntimeError("No containers started")
 
         self.containers = {
-            container.name.split('-')[1]: container
-            for container in containers
+            container.name.split("-")[1]: container for container in containers
         }
 
         # Log available services
@@ -61,7 +67,7 @@ class DockerTimeController:
             logger.info(f"• {service}")
 
         # Get the sending exim container and its port
-        exim_send = self.containers['exim_send']
+        exim_send = self.containers["exim_send"]
         port_mappings = exim_send.network_settings.ports["25/tcp"]
         if not port_mappings:
             raise RuntimeError("Could not find mapped port for sending MTA")
@@ -70,7 +76,9 @@ class DockerTimeController:
 
     def get_send_queue_size(self) -> int:
         """Get the current size of the send queue"""
-        response = self.docker.compose.execute(service="exim_send", command=["exim", "-bpc"], tty=False)
+        response = self.docker.compose.execute(
+            service="exim_send", command=["exim", "-bpc"], tty=False
+        )
 
         if response is None:
             return 0
@@ -92,7 +100,9 @@ class DockerTimeController:
 
     def get_receive_queue_size(self) -> int:
         """Get the current size of the send queue"""
-        response = self.docker.compose.execute(service="exim_receive", command=["exim", "-bpc"], tty=False)
+        response = self.docker.compose.execute(
+            service="exim_receive", command=["exim", "-bpc"], tty=False
+        )
 
         if response is None:
             return 0
@@ -122,13 +132,16 @@ class DockerTimeController:
 
     def cleanup(self):
         if self.docker:
-            self.progress.update(self.action_id, advance=0, description="Stopping Docker services")
+            self.progress.update(
+                self.action_id, advance=0, description="Stopping Docker services"
+            )
             self.docker.compose.down(volumes=True, quiet=True)
 
-        if hasattr(self, 'time_control'):
+        if hasattr(self, "time_control"):
             self.time_control.cleanup()
 
         logger.info("Environment cleanup completed")
+
 
 def ensure_mail_directory() -> bool:
     """Ensures mail directory exists with correct permissions"""
@@ -143,7 +156,7 @@ def ensure_mail_directory() -> bool:
                     ["sudo", "rm", "-R", str(mail_dir)],
                     capture_output=True,
                     text=True,
-                    check=True
+                    check=True,
                 )
             except subprocess.CalledProcessError as e:
                 logger.error(f"Failed to delete directory: {e.stderr}")
@@ -164,7 +177,7 @@ def ensure_mail_directory() -> bool:
                 ["sudo", "chown", "101", str(mail_dir)],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             return True
         except subprocess.CalledProcessError as e:

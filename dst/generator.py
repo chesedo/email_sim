@@ -1,13 +1,15 @@
-from dataclasses import dataclass
-from typing import Optional
-from datetime import datetime
-import random
-from faker import Faker
-from email.message import EmailMessage
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import html
-from jinja2 import Environment, BaseLoader
+import random
+from dataclasses import dataclass
+from datetime import datetime
+from email.message import EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from typing import Optional
+
+from faker import Faker
+from jinja2 import BaseLoader, Environment
+
 
 @dataclass
 class User:
@@ -15,6 +17,7 @@ class User:
     last_name: str
     email: str
     company: Optional[str] = None
+
 
 @dataclass
 class GeneratedEmail:
@@ -30,40 +33,77 @@ class GeneratedEmail:
         msg = EmailMessage()
 
         # Set the standard headers
-        msg["From"] = f"{self.sender.first_name} {self.sender.last_name} <{self.sender.email}>"
-        msg["To"] = f"{self.recipient.first_name} {self.recipient.last_name} <{self.recipient.email}>"
+        msg["From"] = (
+            f"{self.sender.first_name} {self.sender.last_name} <{self.sender.email}>"
+        )
+        msg["To"] = (
+            f"{self.recipient.first_name} {self.recipient.last_name} <{self.recipient.email}>"
+        )
         msg["Subject"] = self.subject
         msg["Date"] = self.date.strftime("%a, %d %b %Y %H:%M:%S +0000")
 
         # Create multipart message
-        msg_alternative = MIMEMultipart('alternative')
-        msg_alternative.attach(MIMEText(self.text_content, 'plain'))
-        msg_alternative.attach(MIMEText(self.html_content, 'html'))
+        msg_alternative = MIMEMultipart("alternative")
+        msg_alternative.attach(MIMEText(self.text_content, "plain"))
+        msg_alternative.attach(MIMEText(self.html_content, "html"))
 
         # Attach the multipart content to the message
         msg.set_content(msg_alternative)
 
         return msg
 
+
 class DataGenerator:
     # Sample business words for content generation
     BUSINESS_WORDS = [
-        "synergy", "strategy", "innovation", "optimization", "solution",
-        "implementation", "analytics", "framework", "methodology", "initiative",
-        "deployment", "infrastructure", "integration", "scalability", "productivity",
-        "collaboration", "efficiency", "sustainability", "development", "management"
+        "synergy",
+        "strategy",
+        "innovation",
+        "optimization",
+        "solution",
+        "implementation",
+        "analytics",
+        "framework",
+        "methodology",
+        "initiative",
+        "deployment",
+        "infrastructure",
+        "integration",
+        "scalability",
+        "productivity",
+        "collaboration",
+        "efficiency",
+        "sustainability",
+        "development",
+        "management",
     ]
 
     BUSINESS_VERBS = [
-        "implement", "optimize", "strategize", "develop", "analyze",
-        "coordinate", "facilitate", "integrate", "leverage", "streamline",
-        "enhance", "maximize", "innovate", "transform", "utilize",
-        "deploy", "scale", "generate", "evaluate", "restructure"
+        "implement",
+        "optimize",
+        "strategize",
+        "develop",
+        "analyze",
+        "coordinate",
+        "facilitate",
+        "integrate",
+        "leverage",
+        "streamline",
+        "enhance",
+        "maximize",
+        "innovate",
+        "transform",
+        "utilize",
+        "deploy",
+        "scale",
+        "generate",
+        "evaluate",
+        "restructure",
     ]
 
     # Sample email templates
     EMAIL_TEMPLATES = {
-        'basic': '''
+        "basic": """
             <html>
             <body>
                 <div style="font-family: Arial, sans-serif;">
@@ -77,8 +117,8 @@ class DataGenerator:
                 </div>
             </body>
             </html>
-        ''',
-        'newsletter': '''
+        """,
+        "newsletter": """
             <html>
             <body>
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -94,7 +134,7 @@ class DataGenerator:
                 </div>
             </body>
             </html>
-        '''
+        """,
     }
 
     def __init__(self, seed: int):
@@ -108,8 +148,8 @@ class DataGenerator:
         return User(
             first_name=self.fake.first_name(),
             last_name=self.fake.last_name(),
-            email=profile['mail'],
-            company=self.fake.company() if random.random() > 0.5 else None
+            email=profile["mail"],
+            company=self.fake.company() if random.random() > 0.5 else None,
         )
 
     def generate_signature(self, user: User) -> str:
@@ -125,9 +165,7 @@ class DataGenerator:
 
     def generate_subject(self) -> str:
         """Generate a realistic email subject"""
-        templates = [
-            "Re: {}", "Fwd: {}", "{}", "{}", "{}"  # Weight towards non-Re/Fwd
-        ]
+        templates = ["Re: {}", "Fwd: {}", "{}", "{}", "{}"]  # Weight towards non-Re/Fwd
 
         subjects = [
             f"Updates on {random.choice(self.BUSINESS_WORDS)} {random.choice(self.BUSINESS_WORDS)}",
@@ -138,7 +176,7 @@ class DataGenerator:
             "Team Update",
             "Quick Question",
             f"Review: {self.fake.catch_phrase()}",
-            f"{self.fake.month_name()} Newsletter"
+            f"{self.fake.month_name()} Newsletter",
         ]
 
         template = random.choice(templates)
@@ -152,21 +190,23 @@ class DataGenerator:
         sentences = []
 
         for _ in range(num_sentences):
-            template = random.choice([
-                "We need to {} the {} {}.",
-                "The {} {} requires immediate {}.",
-                "Please review the {} {} proposal.",
-                "Let's schedule a meeting to discuss {} {}.",
-                "I'd like to get your thoughts on the {} {}.",
-                "We've made progress on {} the {} {}.",
-                "The team has been working on {} {}.",
-                "Could you provide feedback on the {} {}?"
-            ])
+            template = random.choice(
+                [
+                    "We need to {} the {} {}.",
+                    "The {} {} requires immediate {}.",
+                    "Please review the {} {} proposal.",
+                    "Let's schedule a meeting to discuss {} {}.",
+                    "I'd like to get your thoughts on the {} {}.",
+                    "We've made progress on {} the {} {}.",
+                    "The team has been working on {} {}.",
+                    "Could you provide feedback on the {} {}?",
+                ]
+            )
 
             words = [
                 random.choice(self.BUSINESS_VERBS),
                 random.choice(self.BUSINESS_WORDS),
-                random.choice(self.BUSINESS_WORDS)
+                random.choice(self.BUSINESS_WORDS),
             ]
 
             sentences.append(template.format(*words))
@@ -177,7 +217,9 @@ class DataGenerator:
         """Generate somewhat realistic text content"""
         return "\n\n".join(self.generate_paragraph() for _ in range(paragraphs))
 
-    def generate_email(self, date: datetime, sender: User = None, recipient: User = None) -> GeneratedEmail:
+    def generate_email(
+        self, date: datetime, sender: User = None, recipient: User = None
+    ) -> GeneratedEmail:
         """Generate a complete email message"""
         if sender is None:
             sender = self.generate_user()
@@ -193,11 +235,13 @@ class DataGenerator:
 
         # Create HTML version using a random template
         template_key = random.choice(list(self.EMAIL_TEMPLATES.keys()))
-        template = Environment(loader=BaseLoader()).from_string(self.EMAIL_TEMPLATES[template_key])
+        template = Environment(loader=BaseLoader()).from_string(
+            self.EMAIL_TEMPLATES[template_key]
+        )
         html_content = template.render(
             subject=html.escape(subject),
-            text_content=html.escape(text_content).replace('\n', '<br/>'),
-            signature=html.escape(signature).replace('\n', '<br/>')
+            text_content=html.escape(text_content).replace("\n", "<br/>"),
+            signature=html.escape(signature).replace("\n", "<br/>"),
         )
 
         return GeneratedEmail(
@@ -206,5 +250,5 @@ class DataGenerator:
             subject=subject,
             text_content=text_content_with_signature,
             html_content=html_content,
-            date=date
+            date=date,
         )

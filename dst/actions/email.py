@@ -1,19 +1,19 @@
-from datetime import timedelta
-from email.message import EmailMessage
-from email import message_from_bytes
-from pathlib import Path
 import asyncio
-import aiosmtplib
-import time
-from datetime import datetime
 import logging
+import time
+from datetime import datetime, timedelta
+from email import message_from_bytes
+from email.message import EmailMessage
+from pathlib import Path
+
+import aiosmtplib
+
 from dst.actions import SimulationAction, register_action
 from dst.controller import DockerTimeController
-from dst.generator import GeneratedEmail
-
-from dst.generator import DataGenerator
+from dst.generator import DataGenerator, GeneratedEmail
 
 logger = logging.getLogger("dst")
+
 
 class EmailValidator:
     """Validates that an email was received correctly"""
@@ -37,11 +37,17 @@ class EmailValidator:
                 email_msg = message_from_bytes(email_content)
 
                 if email_msg["Subject"] != self.generated_email.subject:
-                    logger.error(f"Subject mismatch: Expected: {self.generated_email.subject}, Received: {email_msg['Subject']}")
+                    logger.error(
+                        f"Subject mismatch: Expected: {self.generated_email.subject}, Received: {email_msg['Subject']}"
+                    )
                     return False
 
-                if email_msg["Date"] != self.generated_email.date.strftime("%a, %d %b %Y %H:%M:%S +0000"):
-                    logger.error(f"Date mismatch: Expected: {self.generated_email.date.strftime('%a, %d %b %Y %H:%M:%S +0000')}, Received: {email_msg['Date']}")
+                if email_msg["Date"] != self.generated_email.date.strftime(
+                    "%a, %d %b %Y %H:%M:%S +0000"
+                ):
+                    logger.error(
+                        f"Date mismatch: Expected: {self.generated_email.date.strftime('%a, %d %b %Y %H:%M:%S +0000')}, Received: {email_msg['Date']}"
+                    )
                     return False
 
                 payload = email_msg.get_payload()
@@ -64,11 +70,18 @@ class EmailValidator:
         # Email file not found yet
         return False
 
+
 @register_action
 class SendBasicEmail(SimulationAction):
     """Sends a basic test email from the sending MTA to the receiving MTA"""
 
-    async def send_test_email(self, host: str, port: int, email: EmailMessage, controller: DockerTimeController) -> bool:
+    async def send_test_email(
+        self,
+        host: str,
+        port: int,
+        email: EmailMessage,
+        controller: DockerTimeController,
+    ) -> bool:
         try:
             # Create SMTP connection
             smtp = aiosmtplib.SMTP(
@@ -105,17 +118,24 @@ class SendBasicEmail(SimulationAction):
             logger.error(f"Failed to send email: {e}")
             return False
 
-    def __call__(self, controller: DockerTimeController, data_generator: DataGenerator) -> bool:
+    def __call__(
+        self, controller: DockerTimeController, data_generator: DataGenerator
+    ) -> bool:
         try:
             # Get current simulated time
             current_time = controller.get_time()
             logger.info(f"Sending email at simulated time: {current_time}")
 
-            generated_email = data_generator.generate_email(date = current_time)
+            generated_email = data_generator.generate_email(date=current_time)
 
             # Use localhost and mapped port to send email
             success = asyncio.run(
-                self.send_test_email("localhost", controller.send_port, generated_email.build_email(), controller)
+                self.send_test_email(
+                    "localhost",
+                    controller.send_port,
+                    generated_email.build_email(),
+                    controller,
+                )
             )
 
             if not success:
@@ -141,7 +161,9 @@ class SendBasicEmail(SimulationAction):
 
                 # Try to validate
                 if validator.validate(controller):
-                    logger.info(f"Email validated successfully after {elapsed:.2f} seconds")
+                    logger.info(
+                        f"Email validated successfully after {elapsed:.2f} seconds"
+                    )
                     return True
 
                 # Brief pause before trying again
