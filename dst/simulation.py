@@ -115,9 +115,6 @@ class SimulationRunner:
         action_counts = {}  # Track how many times each action was executed
 
         try:
-            # Initial delay to let layout render
-            time.sleep(0.1)
-
             logger.info(f"Starting simulation with {len(self.actions)} actions")
 
             while self.completed_steps < self.steps:
@@ -133,9 +130,6 @@ class SimulationRunner:
                 if not self.execute_action():
                     success = False
                     break
-
-                # Small sleep to prevent UI refresh issues
-                time.sleep(0.05)
 
             # Final status message
             total_time = time.time() - start_time
