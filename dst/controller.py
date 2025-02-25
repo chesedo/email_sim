@@ -114,11 +114,15 @@ class DockerTimeController:
 
     def wait_to_reach_receive_queue(self) -> None:
         """Wait until the receive queue has one email"""
+        count = 0
         while True:
             queue_size = self.get_receive_queue_size()
 
             if queue_size == 1:
-                return
+                count += 1
+
+                if count >= 2:
+                    return
 
             time.sleep(0.01)
 

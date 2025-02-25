@@ -135,30 +135,27 @@ class SimulationRunner:
             total_time = time.time() - start_time
 
             # Print simulation summary with separator for visibility
-            logger.info(f"\n{'#' * 50}")
-            logger.info(f"SIMULATION SUMMARY")
-            logger.info(f"{'-' * 50}")
+            logger.step_header(f"\n{'#' * 50}")
+            logger.step_header(f"SIMULATION SUMMARY")
+            logger.step_header(f"{'-' * 50}")
 
             if success:
-                logger.info(f"✨ Status: Completed successfully!")
+                logger.step_header(f"✨ Status: Completed successfully!")
             else:
-                logger.error(f"Status: Failed!")
+                logger.step_header(f"[red]Status: Failed![/]")
 
-            logger.info(f"Total time: {total_time:.2f} seconds")
-            logger.info(f"Steps completed: {self.completed_steps}/{self.steps}")
+            logger.step_header(f"Total time: {total_time:.2f} seconds")
+            logger.step_header(f"Steps completed: {self.completed_steps}/{self.steps}")
 
             # Show action distribution
-            logger.info(f"\nAction distribution:")
+            logger.step_header(f"\nAction distribution:")
             for action_name, count in sorted(
                 action_counts.items(), key=lambda x: x[1], reverse=True
             ):
                 percentage = (count / self.completed_steps) * 100
-                logger.info(f"  • {action_name}: {count} times ({percentage:.1f}%)")
+                logger.step_header(f"  • {action_name}: {count} times ({percentage:.1f}%)")
 
-            logger.info(f"{'#' * 50}")
-
-            # Give time for final logs to appear
-            time.sleep(0.5)
+            logger.step_header(f"{'#' * 50}")
 
             return success
         finally:
@@ -187,7 +184,7 @@ def compare_runs(dir1: Path, dir2: Path) -> bool:
         )
 
         if result.returncode == 0:
-            logger.info("[green bold]Success: Both runs produced identical results![/]")
+            logger.step_header("[green bold]Success: Both runs produced identical results![/]")
             return True
         else:
             logger.warning("Warning: Differences found between runs!")
@@ -239,7 +236,12 @@ def run_simulation_with_comparison(
 
     # Compare results using system diff
     progress.update(sim_number_id, advance=0.5, description="Getting diff")
-    return compare_runs(dir1, Path("./tmp/mail"))
+    result = compare_runs(dir1, Path("./tmp/mail"))
+
+    # Give time for final logs to appear
+    time.sleep(0.5)
+
+    return result
 
 
 def run_simulation(
