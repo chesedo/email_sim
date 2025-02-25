@@ -4,7 +4,8 @@ import sys
 import argparse
 import logging
 import random
-from dst.simulation import run_simulation
+import datetime
+from dst.simulation import STEP_HEADER, run_simulation
 from dst.actions import get_available_actions
 from rich.panel import Panel
 from rich.live import Live
@@ -25,11 +26,12 @@ class LayoutLogHandler(logging.Handler):
     def __init__(self, level=logging.NOTSET):
         super().__init__(level)
         self.messages = deque()
-        self.formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', '%H:%M:%S')
 
-    def emit(self, record):
-        # Get the formatted log message
-        log_entry = self.formatter.format(record)
+    def emit(self, record: logging.LogRecord):
+    # Special case for step headers - no level name
+        if record.levelno == STEP_HEADER:
+            self.messages.append(Text.from_markup(f"{record.getMessage()}"))
+            return
 
         # Color based on log level, but don't add markup - let Rich handle it
         if record.levelno >= logging.ERROR:
@@ -41,8 +43,11 @@ class LayoutLogHandler(logging.Handler):
         else:
             style = "dim"
 
-        # Create a Text object with markup enabled
-        self.messages.append(Text.from_markup(log_entry, style=style))
+        # Pad the log level name to a consistent width (7 covers "WARNING")
+        level_name = record.levelname.ljust(7)
+
+        # Create a Text object with markup enabled - no timestamp
+        self.messages.append(Text.from_markup(f"[{style}]{level_name}[/] {record.getMessage()}"))
 
     def get_renderables(self, height=None) -> List[RenderableType]:
         # If height is provided, return only the most recent messages that fit

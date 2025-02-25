@@ -13,6 +13,18 @@ from pathlib import Path
 
 logger = logging.getLogger("dst")
 
+# Define a custom log level
+STEP_HEADER = 25  # Between INFO (20) and WARNING (30)
+logging.addLevelName(STEP_HEADER, "STEP")
+
+# Add a custom method to the logger class
+def step_header(self, message, *args, **kwargs):
+    if self.isEnabledFor(STEP_HEADER):
+        self._log(STEP_HEADER, message, args, **kwargs)
+
+# Add the method to the Logger class
+logging.Logger.step_header = step_header
+
 class SimulationRunner:
     def __init__(self, actions: List[SimulationAction], progress: Progress, action_id: TaskID, seed: int, steps: int = 100):
         random.seed(seed)
@@ -42,7 +54,7 @@ class SimulationRunner:
             step_header = f"{'=' * 30}\n"
             step_header += f"STEP {self.completed_steps}/{self.steps}"
             step_header += f"\n{'-' * 30}"
-            logger.info(step_header)
+            logger.step_header(step_header)
 
             # Log action details with more context
             logger.info(f"✓ Action: [bold]{action_name}[/bold] (weight: {action.weight:.2f})")
