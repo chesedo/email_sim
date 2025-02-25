@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 import time
 from datetime import datetime, timedelta
 from email import message_from_bytes
@@ -104,7 +105,7 @@ class SendBasicEmail(SimulationAction):
             logger.info("Sending email...")
 
             await controller.wait_to_reach_send_queue()
-            controller.set_time(controller.get_time() + timedelta(milliseconds=100))
+            controller.set_time(controller.get_time() + timedelta(milliseconds=random.randint(10, 100)))
 
             # Check send result
             await send_task
@@ -143,7 +144,7 @@ class SendBasicEmail(SimulationAction):
 
             # Wait for receiver to get the email
             controller.wait_to_reach_receive_queue()
-            controller.set_time(controller.get_time() + timedelta(milliseconds=100))
+            controller.set_time(controller.get_time() + timedelta(milliseconds=random.randint(10, 100)))
 
             # Create validator
             validator = EmailValidator(generated_email)
