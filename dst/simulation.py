@@ -172,7 +172,7 @@ def compare_runs(dir1: Path, dir2: Path) -> bool:
         )
 
         if result.returncode == 0:
-            logger.info("Success: Both runs produced identical results!")
+            logger.info("[green bold]Success: Both runs produced identical results![/]")
             return True
         else:
             logger.warning("Warning: Differences found between runs!")
