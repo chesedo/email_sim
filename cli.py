@@ -84,7 +84,12 @@ logging.basicConfig(
 logger = logging.getLogger("dst")
 
 # Also add a console handler for main screen logs
-console_handler = RichHandler(console=console, rich_tracebacks=True, show_time=False, markup=True)
+console_handler = RichHandler(
+    console=console,
+    rich_tracebacks=True,
+    markup=True,
+    enable_link_path=False  # For some reason this messes with the randomness and causes the second run to have a different sequence of random numbers
+)
 logger.addHandler(console_handler)
 
 def create_layout(steps: int) -> tuple[Layout, Progress, TaskID, TaskID]:
