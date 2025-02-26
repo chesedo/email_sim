@@ -1,10 +1,8 @@
 from dataclasses import dataclass
-
+from datetime import datetime
 from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
-from datetime import datetime
 
 from dst.generator.user import User
 

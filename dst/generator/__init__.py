@@ -2,10 +2,11 @@ import html
 import random
 from datetime import datetime
 
-from dst.generator.email import GeneratedEmail
-from dst.generator.user import User
 from faker import Faker
 from jinja2 import BaseLoader, Environment
+
+from dst.generator.email import GeneratedEmail
+from dst.generator.user import User, UserManager
 
 
 class DataGenerator:
@@ -94,18 +95,10 @@ class DataGenerator:
 
     def __init__(self, seed: int):
         """Initialize the data generator with an optional seed for reproducibility"""
-        self.fake = Faker()
+        self.faker = Faker()
         Faker.seed(seed)
 
-    def generate_user(self) -> User:
-        """Generate a random user with realistic data"""
-        profile = self.fake.profile()
-        return User(
-            first_name=self.fake.first_name(),
-            last_name=self.fake.last_name(),
-            email=profile["mail"],
-            company=self.fake.company() if random.random() > 0.5 else None,
-        )
+        self.user_manager = UserManager(self.faker)
 
     def generate_signature(self, user: User) -> str:
         """Generate an email signature for a user"""
@@ -125,13 +118,13 @@ class DataGenerator:
         subjects = [
             f"Updates on {random.choice(self.BUSINESS_WORDS)} {random.choice(self.BUSINESS_WORDS)}",
             f"Meeting: {random.choice(self.BUSINESS_WORDS)} Discussion",
-            f"Proposal: {self.fake.bs()}",
+            f"Proposal: {self.faker.bs()}",
             f"Question about {random.choice(self.BUSINESS_WORDS)}",
             f"{random.choice(self.BUSINESS_VERBS).title()} {random.choice(self.BUSINESS_WORDS)}",
             "Team Update",
             "Quick Question",
-            f"Review: {self.fake.catch_phrase()}",
-            f"{self.fake.month_name()} Newsletter",
+            f"Review: {self.faker.catch_phrase()}",
+            f"{self.faker.month_name()} Newsletter",
         ]
 
         template = random.choice(templates)
@@ -172,14 +165,10 @@ class DataGenerator:
         """Generate somewhat realistic text content"""
         return "\n\n".join(self.generate_paragraph() for _ in range(paragraphs))
 
-    def generate_email(
-        self, date: datetime, sender: User = None, recipient: User = None
-    ) -> GeneratedEmail:
+    def generate_email(self, date: datetime) -> GeneratedEmail:
         """Generate a complete email message"""
-        if sender is None:
-            sender = self.generate_user()
-        if recipient is None:
-            recipient = self.generate_user()
+        sender = self.user_manager.get_random_user()
+        recipient = self.user_manager.generate_user()
 
         subject = self.generate_subject()
 
