@@ -9,9 +9,9 @@ services:
       - ./exim/send.conf:/etc/exim4/exim4.conf:ro
       - ./tmp/faketime:/tmp/faketime:ro
     environment:
-      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
+      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketimeMT.so.1
       - FAKETIME_TIMESTAMP_FILE=/tmp/faketime
-      - FAKETIME_CACHE_DURATION=0.1 # We need this else the default cache of 10 seconds adds quite a bit of a delay
+      - FAKETIME_NO_CACHE=1 # We need this else the default cache of 10 seconds adds quite a bit of a delay
       - TZ=UTC
     networks:
       dst_net:
@@ -32,9 +32,9 @@ services:
       - ./tmp/mail:/var/mail
       - ./tmp/faketime:/tmp/faketime:ro
     environment:
-      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1
+      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketimeMT.so.1
       - FAKETIME_TIMESTAMP_FILE=/tmp/faketime
-      - FAKETIME_CACHE_DURATION=0.1 # We need this else the default cache of 10 seconds adds quite a bit of a delay
+      - FAKETIME_NO_CACHE=1 # We need this else the default cache of 10 seconds adds quite a bit of a delay
       - TZ=UTC
     networks:
       dst_net:
