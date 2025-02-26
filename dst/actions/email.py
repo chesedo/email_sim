@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import random
+import re
 import time
 from datetime import datetime, timedelta
 from email import message_from_bytes
@@ -30,7 +31,10 @@ class EmailValidator:
     def validate(self, controller: DockerTimeController) -> bool:
         """Verify that the email was received by checking the mail directory."""
         recipient_dir = self.mail_dir / self.generated_email.recipient.email
-        expected_file = recipient_dir / f"{self.generated_email.subject}.eml"
+
+        # Sanitize the subject to match how Exim would process it
+        sanitized_subject = re.sub(r'[/:*?"<>|\\]', '_', self.generated_email.subject)
+        expected_file = recipient_dir / f"{sanitized_subject}.eml"
 
         if expected_file.exists():
             try:
