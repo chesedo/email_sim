@@ -1,9 +1,8 @@
 import asyncio
 import logging
-import random
 import re
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from email import message_from_bytes
 from email.message import EmailMessage
 from pathlib import Path
@@ -33,7 +32,7 @@ class EmailValidator:
         recipient_dir = self.mail_dir / self.generated_email.recipient.email
 
         # Sanitize the subject to match how Exim would process it
-        sanitized_subject = re.sub(r'[/:*?"<>|\\]', '_', self.generated_email.subject)
+        sanitized_subject = re.sub(r'[/:*?"<>|\\]', "_", self.generated_email.subject)
         expected_file = recipient_dir / f"{sanitized_subject}.eml"
 
         if expected_file.exists():
@@ -114,9 +113,7 @@ class SendBasicEmail(SimulationAction):
             await asyncio.sleep(0.1)
             await controller.wait_to_reach_send_queue()
             logger.debug("Email in queue")
-            controller.set_time(
-                controller.get_time() + timedelta(milliseconds=random.randint(50, 100))
-            )
+            controller.advance_time(lower_bound=50)
 
             # Check send result
             await send_task
@@ -157,9 +154,7 @@ class SendBasicEmail(SimulationAction):
             # Wait for receiver to get the email
             controller.wait_to_reach_receive_queue()
             logger.debug("Email in receive queue")
-            controller.set_time(
-                controller.get_time() + timedelta(milliseconds=random.randint(50, 100))
-            )
+            controller.advance_time(lower_bound=50)
 
             # Create validator
             validator = EmailValidator(generated_email)

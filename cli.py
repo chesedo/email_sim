@@ -49,6 +49,7 @@ class LayoutLogHandler(logging.Handler):
             style = "yellow"
         elif record.levelno >= logging.INFO:
             style = "cyan"
+        # Don't show anything in the UI below INFO level
         else:
             return
 

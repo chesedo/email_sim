@@ -69,7 +69,6 @@ class TimeControl:
         """Read the current time from the shared file"""
         with self._lock:
             timestamp = self.time_file.read_text().strip()
-            # Remove @ prefix for parsing
             return datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
 
     def cleanup(self) -> None:

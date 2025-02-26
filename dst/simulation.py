@@ -38,6 +38,7 @@ class SimulationRunner:
         seed: int,
         steps: int = 100,
     ):
+        # Make sure the seed is reset for each run
         random.seed(seed)
 
         weights = [action.weight for action in actions]
@@ -50,34 +51,10 @@ class SimulationRunner:
         self.steps = steps
         self.controller = DockerTimeController(progress, action_id)
         self.data_generator = DataGenerator(seed)
-        self.completed_steps = 0
 
     def execute_action(self, action) -> bool:
         """Execute a single action with enhanced step display"""
         try:
-            action_name = action.__class__.__name__
-            self.completed_steps += 1
-
-            # Create a step header with clear visual separation
-            logger.header(f"{'=' * 30}")
-            logger.header(f"STEP {self.completed_steps}/{self.steps}")
-            logger.header(f"{'-' * 30}")
-
-            # Log action details with more context
-            logger.info(
-                f"✓ Action: [bold]{action_name}[/bold] (weight: {action.weight:.2f})"
-            )
-            logger.info(
-                f"✓ Time: {self.controller.get_time().strftime('%Y-%m-%d %H:%M:%S.%f')}"
-            )
-
-            # Update progress in the UI
-            self.progress.update(
-                self.action_id,
-                advance=0,
-                description=f"[cyan]{action_name} ({self.completed_steps}/{self.steps})",
-            )
-
             # Execute the action
             start_time = time.time()
             success = action(self.controller, self.data_generator)
@@ -85,16 +62,9 @@ class SimulationRunner:
 
             # Log execution result with timing
             if success:
-                logger.info(f"✅ Completed: {action_name} in {execution_time:.2f}s")
+                logger.info(f"✅ Completed: in {execution_time:.2f}s")
             else:
-                logger.error(f"❌ Failed: {action_name} after {execution_time:.2f}s")
-
-            # Update progress again after completion
-            self.progress.update(
-                self.action_id,
-                advance=1,
-                description=f"Running simulation... ({self.completed_steps}/{self.steps})",
-            )
+                logger.error(f"❌ Failed: after {execution_time:.2f}s")
 
             return success
 
@@ -107,11 +77,12 @@ class SimulationRunner:
         success = True
         start_time = time.time()
         action_counts = {}  # Track how many times each action was executed
+        current_step = 0
 
         try:
             logger.info(f"Starting simulation with {len(self.actions)} actions")
 
-            while self.completed_steps < self.steps:
+            while current_step < self.steps:
                 # Select action based on weights
                 action = random.choices(
                     self.actions, weights=self.normalized_weights, k=1
@@ -120,10 +91,37 @@ class SimulationRunner:
 
                 # Track action counts
                 action_counts[action_name] = action_counts.get(action_name, 0) + 1
+                current_step += 1
+
+                # Create a step header with clear visual separation
+                logger.header(f"{'=' * 30}")
+                logger.header(f"STEP {current_step}/{self.steps}")
+                logger.header(f"{'-' * 30}")
+
+                # Log action details with more context
+                logger.info(
+                    f"✓ Action: [bold]{action_name}[/bold] (weight: {action.weight:.2f})"
+                )
+                logger.info(
+                    f"✓ Time: {self.controller.get_time().strftime('%Y-%m-%d %H:%M:%S.%f')}"
+                )
+
+                # Update progress in the UI
+                self.progress.update(
+                    self.action_id,
+                    advance=0,
+                    description=f"[cyan]{action_name} ({current_step}/{self.steps})",
+                )
 
                 if not self.execute_action(action):
                     success = False
                     break
+
+                # Update progress again after completion
+                self.progress.update(
+                    self.action_id,
+                    advance=1,
+                )
 
             # Final status message
             total_time = time.time() - start_time
@@ -140,7 +138,7 @@ class SimulationRunner:
                 logger.header(f"[red]Status: Failed![/]")
 
             logger.header(f"Total time: {total_time:.2f} seconds")
-            logger.header(f"Steps completed: {self.completed_steps}/{self.steps}")
+            logger.header(f"Steps completed: {current_step}/{self.steps}")
 
             # Show action distribution
             logger.header("")
@@ -148,10 +146,8 @@ class SimulationRunner:
             for action_name, count in sorted(
                 action_counts.items(), key=lambda x: x[1], reverse=True
             ):
-                percentage = (count / self.completed_steps) * 100
-                logger.header(
-                    f"  • {action_name}: {count} times ({percentage:.1f}%)"
-                )
+                percentage = (count / current_step) * 100
+                logger.header(f"  • {action_name}: {count} times ({percentage:.1f}%)")
 
             logger.header(f"{'#' * 50}")
 

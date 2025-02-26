@@ -3,7 +3,6 @@ import logging
 import random
 import shutil
 import subprocess
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -129,8 +128,13 @@ class DockerTimeController:
         """Get the current simulation time"""
         return self.time_control.get_time()
 
-    def set_time(self, new_time: datetime) -> None:
-        """Set a new simulation time"""
+    def advance_time(self, lower_bound: int = 1, upper_bound: int = 100) -> None:
+        """Advance the simulation time by a random amount of milliseconds within the bounds"""
+        milliseconds = random.randint(lower_bound, upper_bound)
+        new_time = self.get_time() + timedelta(milliseconds=milliseconds)
+
+        logger.debug(f"Advancing time by {milliseconds} milliseconds")
+
         self.time_control.set_time(new_time)
 
     def cleanup(self):
