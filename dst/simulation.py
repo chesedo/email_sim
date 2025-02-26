@@ -52,14 +52,9 @@ class SimulationRunner:
         self.data_generator = DataGenerator(seed)
         self.completed_steps = 0
 
-    def execute_action(self) -> bool:
+    def execute_action(self, action) -> bool:
         """Execute a single action with enhanced step display"""
         try:
-            # Select action based on weights
-            action = random.choices(self.actions, weights=self.normalized_weights, k=1)[
-                0
-            ]
-
             action_name = action.__class__.__name__
             self.completed_steps += 1
 
@@ -127,7 +122,7 @@ class SimulationRunner:
                 # Track action counts
                 action_counts[action_name] = action_counts.get(action_name, 0) + 1
 
-                if not self.execute_action():
+                if not self.execute_action(action):
                     success = False
                     break
 
@@ -153,7 +148,9 @@ class SimulationRunner:
                 action_counts.items(), key=lambda x: x[1], reverse=True
             ):
                 percentage = (count / self.completed_steps) * 100
-                logger.step_header(f"  • {action_name}: {count} times ({percentage:.1f}%)")
+                logger.step_header(
+                    f"  • {action_name}: {count} times ({percentage:.1f}%)"
+                )
 
             logger.step_header(f"{'#' * 50}")
 
@@ -184,7 +181,9 @@ def compare_runs(dir1: Path, dir2: Path) -> bool:
         )
 
         if result.returncode == 0:
-            logger.step_header("[green bold]Success: Both runs produced identical results![/]")
+            logger.step_header(
+                "[green bold]Success: Both runs produced identical results![/]"
+            )
             return True
         else:
             logger.warning("Warning: Differences found between runs!")
