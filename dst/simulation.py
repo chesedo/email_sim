@@ -59,10 +59,9 @@ class SimulationRunner:
             self.completed_steps += 1
 
             # Create a step header with clear visual separation
-            step_header = f"{'=' * 30}\n"
-            step_header += f"STEP {self.completed_steps}/{self.steps}"
-            step_header += f"\n{'-' * 30}"
-            logger.step_header(step_header)
+            logger.step_header(f"{'=' * 30}")
+            logger.step_header(f"STEP {self.completed_steps}/{self.steps}")
+            logger.step_header(f"{'-' * 30}")
 
             # Log action details with more context
             logger.info(
@@ -130,7 +129,8 @@ class SimulationRunner:
             total_time = time.time() - start_time
 
             # Print simulation summary with separator for visibility
-            logger.step_header(f"\n{'#' * 50}")
+            logger.step_header("")
+            logger.step_header(f"{'#' * 50}")
             logger.step_header(f"SIMULATION SUMMARY")
             logger.step_header(f"{'-' * 50}")
 
@@ -143,7 +143,8 @@ class SimulationRunner:
             logger.step_header(f"Steps completed: {self.completed_steps}/{self.steps}")
 
             # Show action distribution
-            logger.step_header(f"\nAction distribution:")
+            logger.step_header("")
+            logger.step_header(f"Action distribution:")
             for action_name, count in sorted(
                 action_counts.items(), key=lambda x: x[1], reverse=True
             ):

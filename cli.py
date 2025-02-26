@@ -63,8 +63,8 @@ class LayoutLogHandler(logging.Handler):
     def get_renderables(self, height=None) -> List[RenderableType]:
         # If height is provided, return only the most recent messages that fit
         if height is not None and height > 0:
-            # Account for panel borders and title - approximately 14 lines
-            available_lines = max(1, height - 14)
+            # Account for panel borders and title - approximately 6 lines
+            available_lines = max(1, height - 6)
             # Return only the most recent messages that will fit
             return list(self.messages)[-available_lines:]
         # Otherwise return all messages
