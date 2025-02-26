@@ -24,7 +24,7 @@ from rich.table import Table
 from rich.text import Text
 
 from dst.actions import get_available_actions
-from dst.simulation import STEP_HEADER, run_simulation
+from dst.simulation import HEADER, run_simulation
 
 # Create a custom console for our layout
 console = Console()
@@ -38,7 +38,7 @@ class LayoutLogHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord):
         # Special case for step headers - no level name
-        if record.levelno == STEP_HEADER:
+        if record.levelno == HEADER:
             self.messages.append(Text.from_markup(f"{record.getMessage()}"))
             return
 

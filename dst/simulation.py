@@ -15,18 +15,18 @@ from dst.generator import DataGenerator
 logger = logging.getLogger("dst")
 
 # Define a custom log level
-STEP_HEADER = 25  # Between INFO (20) and WARNING (30)
-logging.addLevelName(STEP_HEADER, "STEP")
+HEADER = 25  # Between INFO (20) and WARNING (30)
+logging.addLevelName(HEADER, "HEADER")
 
 
 # Add a custom method to the logger class
-def step_header(self, message, *args, **kwargs):
-    if self.isEnabledFor(STEP_HEADER):
-        self._log(STEP_HEADER, message, args, **kwargs)
+def header(self, message, *args, **kwargs):
+    if self.isEnabledFor(HEADER):
+        self._log(HEADER, message, args, **kwargs)
 
 
 # Add the method to the Logger class
-logging.Logger.step_header = step_header
+logging.Logger.header = header
 
 
 class SimulationRunner:
@@ -59,9 +59,9 @@ class SimulationRunner:
             self.completed_steps += 1
 
             # Create a step header with clear visual separation
-            logger.step_header(f"{'=' * 30}")
-            logger.step_header(f"STEP {self.completed_steps}/{self.steps}")
-            logger.step_header(f"{'-' * 30}")
+            logger.header(f"{'=' * 30}")
+            logger.header(f"STEP {self.completed_steps}/{self.steps}")
+            logger.header(f"{'-' * 30}")
 
             # Log action details with more context
             logger.info(
@@ -129,31 +129,31 @@ class SimulationRunner:
             total_time = time.time() - start_time
 
             # Print simulation summary with separator for visibility
-            logger.step_header("")
-            logger.step_header(f"{'#' * 50}")
-            logger.step_header(f"SIMULATION SUMMARY")
-            logger.step_header(f"{'-' * 50}")
+            logger.header("")
+            logger.header(f"{'#' * 50}")
+            logger.header(f"SIMULATION SUMMARY")
+            logger.header(f"{'-' * 50}")
 
             if success:
-                logger.step_header(f"✨ Status: Completed successfully!")
+                logger.header(f"✨ Status: Completed successfully!")
             else:
-                logger.step_header(f"[red]Status: Failed![/]")
+                logger.header(f"[red]Status: Failed![/]")
 
-            logger.step_header(f"Total time: {total_time:.2f} seconds")
-            logger.step_header(f"Steps completed: {self.completed_steps}/{self.steps}")
+            logger.header(f"Total time: {total_time:.2f} seconds")
+            logger.header(f"Steps completed: {self.completed_steps}/{self.steps}")
 
             # Show action distribution
-            logger.step_header("")
-            logger.step_header(f"Action distribution:")
+            logger.header("")
+            logger.header(f"Action distribution:")
             for action_name, count in sorted(
                 action_counts.items(), key=lambda x: x[1], reverse=True
             ):
                 percentage = (count / self.completed_steps) * 100
-                logger.step_header(
+                logger.header(
                     f"  • {action_name}: {count} times ({percentage:.1f}%)"
                 )
 
-            logger.step_header(f"{'#' * 50}")
+            logger.header(f"{'#' * 50}")
 
             return success
         finally:
@@ -182,7 +182,7 @@ def compare_runs(dir1: Path, dir2: Path) -> bool:
         )
 
         if result.returncode == 0:
-            logger.step_header(
+            logger.header(
                 "[green bold]Success: Both runs produced identical results![/]"
             )
             return True
