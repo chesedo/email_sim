@@ -50,7 +50,7 @@ class LayoutLogHandler(logging.Handler):
         elif record.levelno >= logging.INFO:
             style = "cyan"
         else:
-            style = "dim"
+            return
 
         # Pad the log level name to a consistent width (7 covers "WARNING")
         level_name = record.levelname.ljust(7)
@@ -95,7 +95,9 @@ class LogPanel:
 
 # Set up our custom log handler
 layout_handler = LayoutLogHandler()
-logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=[layout_handler])
+logging.basicConfig(
+    level=logging.DEBUG, format="%(message)s", handlers=[layout_handler]
+)
 logger = logging.getLogger("dst")
 
 # Also add a console handler for main screen logs
@@ -104,6 +106,7 @@ console_handler = RichHandler(
     rich_tracebacks=True,
     markup=True,
     enable_link_path=False,  # For some reason this messes with the randomness and causes the second run to have a different sequence of random numbers
+    log_time_format="[%H:%M:%S.%f]",  # Add milliseconds with %f
 )
 logger.addHandler(console_handler)
 
