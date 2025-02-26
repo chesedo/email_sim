@@ -68,7 +68,7 @@ class EmailValidator:
                 logger.error(f"Error reading email: {e}")
                 return False
 
-        # Email file not found yet
+        logger.debug(f"Email not found at: {expected_file}")
         return False
 
 
@@ -94,24 +94,33 @@ class SendBasicEmail(SimulationAction):
             )
 
             # Start connection process
+            logger.debug("Opening connection to SMTP server...")
             connect_task = asyncio.create_task(smtp.connect())
-            logger.info(f"Connecting to SMTP server at {host}:{port}...")
+            logger.debug(f"Connecting to SMTP server at {host}:{port}...")
 
             # Check connection result
             await connect_task
+            logger.debug("Connection established")
 
             # Start send process
+            logger.debug("Ready to send email...")
             send_task = asyncio.create_task(smtp.send_message(email))
             logger.info("Sending email...")
 
+            await asyncio.sleep(0.1)
             await controller.wait_to_reach_send_queue()
-            controller.set_time(controller.get_time() + timedelta(milliseconds=random.randint(20, 100)))
+            logger.debug("Email in queue")
+            controller.set_time(
+                controller.get_time() + timedelta(milliseconds=random.randint(50, 100))
+            )
 
             # Check send result
             await send_task
+            logger.info("Email sent")
 
             # Close connection
             await smtp.quit()
+            logger.debug("Connection closed")
 
             return True
 
@@ -125,7 +134,6 @@ class SendBasicEmail(SimulationAction):
         try:
             # Get current simulated time
             current_time = controller.get_time()
-            logger.info(f"Sending email at simulated time: {current_time}")
 
             generated_email = data_generator.generate_email(date=current_time)
 
@@ -144,7 +152,10 @@ class SendBasicEmail(SimulationAction):
 
             # Wait for receiver to get the email
             controller.wait_to_reach_receive_queue()
-            controller.set_time(controller.get_time() + timedelta(milliseconds=random.randint(40, 150)))
+            logger.debug("Email in receive queue")
+            controller.set_time(
+                controller.get_time() + timedelta(milliseconds=random.randint(50, 100))
+            )
 
             # Create validator
             validator = EmailValidator(generated_email)

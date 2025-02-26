@@ -93,10 +93,13 @@ class DockerTimeController:
         while True:
             queue_size = self.get_send_queue_size()
 
+            logger.debug(f"Send queue size: {queue_size}")
+
             if queue_size == 1:
                 return
 
-            await asyncio.sleep(0.01)
+            # Need a small async sleep to allow the send thread to continue
+            await asyncio.sleep(0.001)
 
     def get_receive_queue_size(self) -> int:
         """Get the current size of the send queue"""
@@ -114,17 +117,13 @@ class DockerTimeController:
 
     def wait_to_reach_receive_queue(self) -> None:
         """Wait until the receive queue has one email"""
-        count = 0
         while True:
             queue_size = self.get_receive_queue_size()
 
+            logger.debug(f"Receive queue size: {queue_size}")
+
             if queue_size == 1:
-                count += 1
-
-                if count >= 2:
-                    return
-
-            time.sleep(0.01)
+                return
 
     def get_time(self) -> datetime:
         """Get the current simulation time"""

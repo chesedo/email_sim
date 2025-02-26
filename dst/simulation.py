@@ -74,7 +74,7 @@ class SimulationRunner:
                 f"✓ Action: [bold]{action_name}[/bold] (weight: {action.weight:.2f})"
             )
             logger.info(
-                f"✓ Time: {self.controller.get_time().strftime('%Y-%m-%d %H:%M:%S')}"
+                f"✓ Time: {self.controller.get_time().strftime('%Y-%m-%d %H:%M:%S.%f')}"
             )
 
             # Update progress in the UI
