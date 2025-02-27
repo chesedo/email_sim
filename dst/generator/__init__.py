@@ -1,12 +1,8 @@
-import html
 import random
-from datetime import datetime
 
 from faker import Faker
-from jinja2 import BaseLoader, Environment
 
-from dst.generator.email import GeneratedEmail
-from dst.generator.user import User, UserManager
+from dst.generator.user_manager import UserManager
 
 
 class DataGenerator:
@@ -100,17 +96,6 @@ class DataGenerator:
 
         self.user_manager = UserManager(self.faker)
 
-    def generate_signature(self, user: User) -> str:
-        """Generate an email signature for a user"""
-        signature_parts = [
-            f"{user.first_name} {user.last_name}",
-        ]
-        if user.company:
-            signature_parts.append(user.company)
-        signature_parts.append(user.email)
-
-        return "\n".join(signature_parts)
-
     def generate_subject(self) -> str:
         """Generate a realistic email subject"""
         templates = ["Re: {}", "Fwd: {}", "{}", "{}", "{}"]  # Weight towards non-Re/Fwd
@@ -164,35 +149,3 @@ class DataGenerator:
     def generate_text_content(self, paragraphs: int = 3) -> str:
         """Generate somewhat realistic text content"""
         return "\n\n".join(self.generate_paragraph() for _ in range(paragraphs))
-
-    def generate_email(self, date: datetime) -> GeneratedEmail:
-        """Generate a complete email message"""
-        sender = self.user_manager.get_random_user()
-        recipient = self.user_manager.generate_user()
-
-        subject = self.generate_subject()
-
-        # Generate content
-        text_content = self.generate_text_content()
-        signature = self.generate_signature(sender)
-        text_content_with_signature = f"{text_content}\n\n--\n{signature}"
-
-        # Create HTML version using a random template
-        template_key = random.choice(list(self.EMAIL_TEMPLATES.keys()))
-        template = Environment(loader=BaseLoader()).from_string(
-            self.EMAIL_TEMPLATES[template_key]
-        )
-        html_content = template.render(
-            subject=html.escape(subject),
-            text_content=html.escape(text_content).replace("\n", "<br/>"),
-            signature=html.escape(signature).replace("\n", "<br/>"),
-        )
-
-        return GeneratedEmail(
-            sender=sender,
-            recipient=recipient,
-            subject=subject,
-            text_content=text_content_with_signature,
-            html_content=html_content,
-            date=date,
-        )

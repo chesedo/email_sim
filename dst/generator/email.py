@@ -4,6 +4,7 @@ from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from dst.generator import DataGenerator
 from dst.generator.user import User
 
 
@@ -15,6 +16,25 @@ class GeneratedEmail:
     text_content: str
     html_content: str
     date: datetime
+
+    def __init__(self, data_generator: DataGenerator, date: datetime):
+        """Generate a complete email message"""
+        sender = data_generator.user_manager.get_random_user()
+        recipient = data_generator.user_manager.generate_user()
+
+        subject = data_generator.generate_subject()
+
+        # Generate content
+        text_content, html_content = sender.email_client.generate_content(
+            subject, sender, data_generator.generate_text_content()
+        )
+
+        self.sender = sender
+        self.recipient = recipient
+        self.subject = subject
+        self.text_content = text_content
+        self.html_content = html_content
+        self.date = date
 
     def build_email(self) -> EmailMessage:
         """Build an EmailMessage object from the generated email"""

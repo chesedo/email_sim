@@ -11,7 +11,8 @@ import aiosmtplib
 
 from dst.actions import SimulationAction, register_action
 from dst.controller import DockerTimeController
-from dst.generator import DataGenerator, GeneratedEmail
+from dst.generator import DataGenerator
+from dst.generator.email import GeneratedEmail
 
 logger = logging.getLogger("dst")
 
@@ -136,7 +137,7 @@ class SendBasicEmail(SimulationAction):
             # Get current simulated time
             current_time = controller.get_time()
 
-            generated_email = data_generator.generate_email(date=current_time)
+            generated_email = GeneratedEmail(data_generator, current_time)
 
             # Use localhost and mapped port to send email
             success = asyncio.run(
