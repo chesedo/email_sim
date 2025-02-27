@@ -24,6 +24,10 @@ class EmailClient:
         """
         raise NotImplementedError
 
+    def __repr__(self) -> str:
+        """Return a small but detailed representation of the email client"""
+        return self.__class__.__name__
+
 
 # Registry of available email clients
 _email_client_registry: Dict[str, Type[EmailClient]] = {}
@@ -40,6 +44,8 @@ def get_random_email_client() -> EmailClient:
     if not _email_client_registry:
         # Import clients to register them
         from . import default_client  # noqa
+        from . import gmail  # noqa
+        from . import outlook  # noqa
 
     client_class = random.choice(list(_email_client_registry.values()))
 
