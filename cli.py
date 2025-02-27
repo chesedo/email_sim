@@ -147,12 +147,12 @@ def main():
     parser = argparse.ArgumentParser(description="Run time simulation")
     parser.add_argument("--seed", type=int, help="Seed for random time generation")
     parser.add_argument(
-        "--steps", type=int, default=2, help="Number of simulation steps"
+        "--steps", type=int, default=20, help="Number of simulation steps"
     )
     args = parser.parse_args()
 
     if args.seed is None:
-        args.seed = random.randint(1, 1_000_000)
+        args.seed = random.randint(1, 1_000_000_000)
 
     layout, progress, sim_number_id, action_id = create_layout(steps=args.steps)
 
