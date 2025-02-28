@@ -21,6 +21,12 @@ class DockerTimeController:
                 "Could not set up mail directory with correct permissions"
             )
 
+        if not ensure_root_owns_exim_config("exim/send.conf"):
+            raise RuntimeError("Could not set sending exim config to root ownership")
+
+        if not ensure_root_owns_exim_config("exim/receive.conf"):
+            raise RuntimeError("Could not set receiving exim config to root ownership")
+
         # Generate a random time between 2020 and 2030
         start = datetime(2020, 1, 1)
         end = datetime(2030, 12, 31)
@@ -36,7 +42,6 @@ class DockerTimeController:
 
         self.docker = DockerClient()
 
-        # TODO change the ownership of the exim config files to `root`
         self.progress = progress
         self.action_id = action_id
 
@@ -192,4 +197,30 @@ def ensure_mail_directory() -> bool:
             return False
         except Exception as e:
             logger.error(f"Unexpected error setting permissions: {e}")
+            return False
+
+# Exim has a security thing where the running user cannot own the config files
+# It has to be owned by root. So this function makes sure that is the case.
+def ensure_root_owns_exim_config(path: str) -> bool:
+    """Ensure the exim config file at `path` is owned by root"""
+    try:
+        shutil.chown(path, user=0)
+
+        return True
+    except PermissionError:
+        logger.warning(f"Need sudo permissions to set ownership of {path}")
+        try:
+            subprocess.run(
+                ["sudo", "chown", "root", path],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to set ownership of {path}: {e.stderr}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error setting ownership of {path}: {e}")
             return False

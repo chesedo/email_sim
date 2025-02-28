@@ -25,7 +25,7 @@ DST solves these problems by:
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/your-username/email_sim.git
+   git clone https://github.com/chesedo/email_sim.git
    cd email_sim
    ```
 
