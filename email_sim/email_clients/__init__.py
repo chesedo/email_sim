@@ -1,7 +1,7 @@
 import random
 from typing import Dict, Type
 
-from dst.generator.user import User
+from email_sim.generator.user import User
 
 
 class EmailClient:

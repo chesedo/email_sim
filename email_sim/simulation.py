@@ -8,9 +8,9 @@ from typing import List
 
 from rich.progress import Progress, TaskID
 
-from dst.actions import SimulationAction
-from dst.controller import DockerTimeController
-from dst.generator import DataGenerator
+from email_sim.actions import SimulationAction
+from email_sim.controller import DockerTimeController
+from email_sim.generator import DataGenerator
 
 logger = logging.getLogger("dst")
 

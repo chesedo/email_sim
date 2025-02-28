@@ -23,8 +23,8 @@ from rich.progress import (
 from rich.table import Table
 from rich.text import Text
 
-from dst.actions import get_available_actions
-from dst.simulation import HEADER, run_simulation
+from email_sim.actions import get_available_actions
+from email_sim.simulation import HEADER, run_simulation
 
 # Create a custom console for our layout
 console = Console()
@@ -123,7 +123,7 @@ def create_layout(steps: int) -> tuple[Layout, Progress, TaskID, TaskID]:
     )
 
     layout["title"].update(
-        Panel(Text("DST Simulation", style="bold magenta"), border_style="magenta")
+        Panel(Text("Email Simulation", style="bold magenta"), border_style="magenta")
     )
     # Create progress panel
     progress = Progress(

@@ -2,7 +2,7 @@ import random
 
 from faker import Faker
 
-from dst.generator.user_manager import UserManager
+from email_sim.generator.user_manager import UserManager
 
 
 class DataGenerator:

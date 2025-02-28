@@ -3,8 +3,8 @@ import random
 
 from faker import Faker
 
-from dst.email_clients import get_random_email_client
-from dst.generator.user import User
+from email_sim.email_clients import get_random_email_client
+from email_sim.generator.user import User
 
 logger = logging.getLogger("dst")
 

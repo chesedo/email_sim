@@ -1,7 +1,7 @@
 from typing import Dict, Type
 
-from dst.controller import DockerTimeController
-from dst.generator import DataGenerator
+from email_sim.controller import DockerTimeController
+from email_sim.generator import DataGenerator
 
 
 class SimulationAction:

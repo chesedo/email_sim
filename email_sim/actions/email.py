@@ -9,10 +9,10 @@ from pathlib import Path
 
 import aiosmtplib
 
-from dst.actions import SimulationAction, register_action
-from dst.controller import DockerTimeController
-from dst.generator import DataGenerator
-from dst.generator.email import GeneratedEmail
+from email_sim.actions import SimulationAction, register_action
+from email_sim.controller import DockerTimeController
+from email_sim.generator import DataGenerator
+from email_sim.generator.email import GeneratedEmail
 
 logger = logging.getLogger("dst")
 

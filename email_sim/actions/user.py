@@ -1,9 +1,9 @@
 import logging
 import random
 
-from dst.actions import SimulationAction, register_action
-from dst.controller import DockerTimeController
-from dst.generator import DataGenerator
+from email_sim.actions import SimulationAction, register_action
+from email_sim.controller import DockerTimeController
+from email_sim.generator import DataGenerator
 
 logger = logging.getLogger("dst")
 

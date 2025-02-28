@@ -4,17 +4,7 @@
 pkgs.mkShell {
   buildInputs = with pkgs; [
     python3
-    python3Packages.docker
-    python3Packages.python-on-whales
-    python3Packages.requests
-    python3Packages.rich
-    python3Packages.aiosmtplib
-    python3Packages.faker
-    python3Packages.jinja2
-    python3Packages.pip
-    python3Packages.isort # To sort imports
-    python3Packages.black # For formating
-    pyright
+    poetry
     docker
     swaks
     libfaketime
@@ -24,15 +14,23 @@ pkgs.mkShell {
     # Ensure Docker socket is accessible
     export DOCKER_HOST="unix:///var/run/docker.sock"
 
-    # Create a virtual environment if it doesn't exist
-    if [ ! -d "venv" ]; then
-      python -m venv venv
+    # Create Poetry environment if it doesn't exist
+    if [ ! -f "poetry.lock" ]; then
+      echo "Installing dependencies with Poetry..."
+      poetry install
     fi
 
-    # Activate the virtual environment
-    source venv/bin/activate
+    # Add Poetry's virtual environment bin directory to PATH
+    export PATH="$PWD/.venv/bin:$PATH"
+
+    # Source the virtual environment if it exists (but don't create a subshell)
+    if [ -d "$PWD/.venv" ]; then
+      export VIRTUAL_ENV="$PWD/.venv"
+      export POETRY_ACTIVE=1
+    fi
 
     echo "Python development environment ready!"
     echo "Docker socket at: $DOCKER_HOST"
+    echo "Run 'poetry run dst' to start the simulation"
   '';
 }

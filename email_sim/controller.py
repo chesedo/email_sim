@@ -9,7 +9,7 @@ from pathlib import Path
 from python_on_whales import DockerClient
 from rich.progress import Progress, TaskID
 
-from dst.timecontrol import TimeControl
+from email_sim.timecontrol import TimeControl
 
 logger = logging.getLogger("dst")
 

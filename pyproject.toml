@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "email_sim"
+version = "0.1.0"
+description = "Deterministic Simulated Testing for email sending with exim"
+authors = ["chesedo <pieter@chesedo.me>"]
+license = "AGPL-3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+rich = "^13.9.4"
+faker = "^36.1.1"
+jinja2 = "^3.1.5"
+python-on-whales = "^0.75.1"
+aiosmtplib = "^4.0.0"
+
+
+[tool.poetry.group.dev.dependencies]
+isort = "^6.0.1"
+black = "^25.1.0"
+pyright = "^1.1.395"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+dst = "dst:main"

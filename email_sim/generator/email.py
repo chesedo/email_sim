@@ -4,8 +4,8 @@ from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from dst.generator import DataGenerator
-from dst.generator.user import User
+from email_sim.generator import DataGenerator
+from email_sim.generator.user import User
 
 
 @dataclass

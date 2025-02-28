@@ -2,8 +2,8 @@ import html
 
 from jinja2 import BaseLoader, Environment
 
-from dst.email_clients import EmailClient, register_email_client
-from dst.generator.user import User
+from email_sim.email_clients import EmailClient, register_email_client
+from email_sim.generator.user import User
 
 
 @register_email_client

@@ -2,21 +2,22 @@ import html
 
 from jinja2 import BaseLoader, Environment
 
-from dst.email_clients import EmailClient, register_email_client
-from dst.generator.user import User
+from email_sim.email_clients import EmailClient, register_email_client
+from email_sim.generator.user import User
 
 
 @register_email_client
-class OutlookClient(EmailClient):
-    """Outlook email client with typical Outlook formatting"""
+class GmailClient(EmailClient):
+    """Gmail email client with typical Gmail formatting"""
 
     EMAIL_TEMPLATE = """
         <html>
-        <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 11pt; color: #000000;">
-            <div>
+        <body>
+            <div style="font-family: Arial, sans-serif; color: #202124; font-size: 14px; line-height: 1.5;">
                 <p>{{ text_content }}</p>
                 {% if signature %}
-                <div style="border-top: solid 1.0pt #E1E1E1; padding-top: 8px; margin-top: 15px;">
+                <br/>
+                <div style="color: #666; font-size: 13px; padding-top: 12px; border-top: 1px solid #e0e0e0; margin-top: 12px;">
                     {{ signature }}
                 </div>
                 {% endif %}
@@ -28,10 +29,10 @@ class OutlookClient(EmailClient):
     def generate_content(
         self, subject: str, sender: User, text_content: str
     ) -> tuple[str, str]:
-        """Generate the text and HTML content of an email in Outlook style"""
+        """Generate the text and HTML content of an email in Gmail style"""
         # Generate content
         signature = sender.generate_signature()
-        text_content_with_signature = f"{text_content}\n\n{signature}"
+        text_content_with_signature = f"{text_content}\n\n--\n{signature}"
 
         template = Environment(loader=BaseLoader()).from_string(self.EMAIL_TEMPLATE)
         html_content = template.render(

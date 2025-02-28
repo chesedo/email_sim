@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 # To avoid circular references for type hinting
 if TYPE_CHECKING:
-    from dst.email_clients import EmailClient
+    from email_sim.email_clients import EmailClient
 
 logger = logging.getLogger("dst")
 
