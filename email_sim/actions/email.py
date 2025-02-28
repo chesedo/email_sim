@@ -112,6 +112,11 @@ class SendBasicEmail(SimulationAction):
             logger.info("Sending email...")
 
             await asyncio.sleep(0.1)
+
+            # Exim has this thing where the SMTP connection freezes at the very end and waits for a clock update
+            # Ie exim continously ticks / spins until the time changes. So we need to advance time at exactly this
+            # point. Luckily, this happens at the same time that an email enters the send queue. Thus, we wait for
+            # the email to enter the send queue and then advance time.
             await controller.wait_to_reach_send_queue()
             logger.debug("Email in queue")
             controller.advance_time(lower_bound=50)
@@ -152,7 +157,10 @@ class SendBasicEmail(SimulationAction):
             if not success:
                 return False
 
-            # Wait for receiver to get the email
+            # Exim has this thing where the SMTP connection freezes at the very end and waits for a clock update
+            # Ie exim continously ticks / spins until the time changes. So we need to advance time at exactly this
+            # point. Luckily, this happens at the same time that an email enters the receive queue. Thus, we wait for
+            # the email to enter the receive queue and then advance time.
             controller.wait_to_reach_receive_queue()
             logger.debug("Email in receive queue")
             controller.advance_time(lower_bound=50)
