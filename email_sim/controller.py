@@ -204,14 +204,14 @@ def ensure_mail_directory() -> bool:
 def ensure_root_owns_exim_config(path: str) -> bool:
     """Ensure the exim config file at `path` is owned by root"""
     try:
-        shutil.chown(path, user=0)
+        shutil.chown(path, user=0, group=0)
 
         return True
     except PermissionError:
         logger.warning(f"Need sudo permissions to set ownership of {path}")
         try:
             subprocess.run(
-                ["sudo", "chown", "root", path],
+                ["sudo", "chown", "root:root", path],
                 capture_output=True,
                 text=True,
                 check=True,
