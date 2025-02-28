@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -19,6 +20,13 @@ class TimeControl:
 
     def __init__(self, initial_time: datetime):
         self.time_file = Path("./tmp/faketime")
+
+        # Sometimes starting docker manually causes the `faketime` file to become a direcotry
+        # So just auto fix that
+        if self.time_file.is_dir():
+            logger.warning(f"Found 'faketime' as a directory, converting to file")
+            shutil.rmtree(self.time_file)
+
         self.time_file.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
         self.set_time(initial_time)
